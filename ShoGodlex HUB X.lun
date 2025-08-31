@@ -1,127 +1,136 @@
---// Variables
+--// Services
 local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local hrp = character:WaitForChild("HumanoidRootPart")
-local replicatedStorage = game:GetService("ReplicatedStorage")
-local workspace = game:GetService("Workspace")
+local rs = game:GetService("ReplicatedStorage")
+local ws = game:GetService("Workspace")
 local runService = game:GetService("RunService")
 
---// Settings
-local attackDelay = 0.5
-local autoFarm = true
-local difficulty = "Normal"
-local mapName = "DefaultMap"
+--// Player Variables
+local char = player.Character or player.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+local humanoid = char:WaitForChild("Humanoid")
+
+--// Settings (บันทึกค่าไว้รอบถัดไป)
+local Settings = {
+    AutoFarm = true,
+    AutoRematch = true,
+    AntiAFK = true,
+    Godmode = true,
+    AttackDelay = 0.5
+}
+
+--// RemoteEvents (ตรวจสอบชื่อจริงในเกม)
+local attackEvent = rs:FindFirstChild("AttackEvent")
+local rematchEvent = rs:FindFirstChild("RematchEvent")
 
 --// UI
 local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+ScreenGui.ResetOnSpawn = false
+
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 200, 0, 150)
+Frame.Size = UDim2.new(0, 220, 0, 180)
 Frame.Position = UDim2.new(0.8,0,0.1,0)
 Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 Frame.BackgroundTransparency = 0.3
 Frame.BorderSizePixel = 0
 
-local function createButton(name, posY, callback)
+local function createToggleButton(name, yPos, settingKey)
     local btn = Instance.new("TextButton", Frame)
-    btn.Size = UDim2.new(0, 180, 0, 30)
-    btn.Position = UDim2.new(0, 10, 0, posY)
-    btn.Text = name
+    btn.Size = UDim2.new(0, 200, 0, 35)
+    btn.Position = UDim2.new(0, 10, 0, yPos)
     btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
     btn.TextColor3 = Color3.new(1,1,1)
-    btn.MouseButton1Click:Connect(callback)
+    btn.Text = name.." : "..(Settings[settingKey] and "ON" or "OFF")
+    btn.MouseButton1Click:Connect(function()
+        Settings[settingKey] = not Settings[settingKey]
+        btn.Text = name.." : "..(Settings[settingKey] and "ON" or "OFF")
+    end)
 end
 
-createButton("Start AutoFarm", 10, function() autoFarm = true end)
-createButton("Stop AutoFarm", 50, function() autoFarm = false end)
-createButton("Set Easy", 90, function() difficulty = "Easy" end)
-createButton("Set Hard", 130, function() difficulty = "Hard" end)
+createToggleButton("Auto-Farm", 10, "AutoFarm")
+createToggleButton("Auto-Rematch", 55, "AutoRematch")
+createToggleButton("Anti-AFK", 100, "AntiAFK")
+createToggleButton("Godmode", 145, "Godmode")
 
---// Functions
-local function selectMap(name)
-    local mapEvent = replicatedStorage:FindFirstChild("SelectMapEvent")
-    if mapEvent then
-        mapEvent:FireServer(name)
-        mapName = name
+--// Anti-AFK
+spawn(function()
+    while true do
+        if Settings.AntiAFK then
+            hrp.CFrame = hrp.CFrame * CFrame.new(0,0,0.1)
+        end
+        wait(60)
     end
-end
+end)
 
-local function setDifficulty(level)
-    local diffEvent = replicatedStorage:FindFirstChild("SetDifficultyEvent")
-    if diffEvent then
-        diffEvent:FireServer(level)
-        difficulty = level
+--// Godmode
+spawn(function()
+    while true do
+        if Settings.Godmode and humanoid.Health < humanoid.MaxHealth then
+            humanoid.Health = humanoid.MaxHealth
+        end
+        wait(0.1)
     end
-end
+end)
 
+--// หา Zombie ใกล้สุด
 local function getClosestZombie()
     local closest = nil
-    local shortestDistance = math.huge
-    local zombiesFolder = workspace:FindFirstChild("Zombies")
-    if not zombiesFolder then return nil end
-
-    for _, zombie in pairs(zombiesFolder:GetChildren()) do
-        if zombie:FindFirstChild("Humanoid") and zombie.Humanoid.Health > 0 then
-            local distance = (zombie.HumanoidRootPart.Position - hrp.Position).Magnitude
-            if distance < shortestDistance then
-                shortestDistance = distance
-                closest = zombie
+    local minDist = math.huge
+    for _, z in pairs(ws:FindFirstChild("Zombies") or {}) do
+        if z:FindFirstChild("Humanoid") and z.Humanoid.Health > 0 then
+            local dist = (z.HumanoidRootPart.Position - hrp.Position).Magnitude
+            if dist < minDist then
+                minDist = dist
+                closest = z
             end
         end
     end
     return closest
 end
 
+--// โจมตี Zombie
 local function attackZombie(zombie)
-    if not zombie or not zombie:FindFirstChild("HumanoidRootPart") then return end
+    if not zombie then return end
     hrp.CFrame = zombie.HumanoidRootPart.CFrame + Vector3.new(0,0,3)
-    local attackEvent = replicatedStorage:FindFirstChild("AttackEvent")
     while zombie.Humanoid.Health > 0 do
         if attackEvent then attackEvent:FireServer() end
-        wait(attackDelay)
+        wait(Settings.AttackDelay)
     end
 end
 
+--// Auto-Rematch
+local function checkWinAndRematch()
+    local win = ws:FindFirstChild("GameStatus") and ws.GameStatus:FindFirstChild("Win")
+    if win and win.Value then
+        if Settings.AutoRematch and rematchEvent then
+            rematchEvent:FireServer()
+        else
+            player:LoadCharacter()
+        end
+        wait(3)
+    end
+end
+
+--// Auto-Respawn
 local function autoRespawn()
-    if character.Humanoid.Health <= 0 then
+    if humanoid.Health <= 0 then
         player:LoadCharacter()
-        character = player.Character or player.CharacterAdded:Wait()
-        hrp = character:WaitForChild("HumanoidRootPart")
+        char = player.Character or player.CharacterAdded:Wait()
+        hrp = char:WaitForChild("HumanoidRootPart")
+        humanoid = char:WaitForChild("Humanoid")
     end
 end
 
-local function checkWin()
-    local winStatus = workspace:FindFirstChild("GameStatus") and workspace.GameStatus:FindFirstChild("Win")
-    if winStatus and winStatus.Value == true then
-        return true
-    end
-    return false
-end
-
-local function autoRematch()
-    local rematchEvent = replicatedStorage:FindFirstChild("RematchEvent")
-    if rematchEvent then
-        rematchEvent:FireServer()
-    else
-        player:LoadCharacter()
-    end
-end
-
---// Main Loop
+--// Main Loop ฟาร์ม 24/7
 spawn(function()
     while true do
-        if autoFarm then
+        if Settings.AutoFarm then
             autoRespawn()
-            if checkWin() then
-                print("ชนะแล้ว! เริ่มรอบใหม่...")
-                autoRematch()
-                wait(3)
+            checkWinAndRematch()
+            local zombie = getClosestZombie()
+            if zombie then
+                attackZombie(zombie)
             else
-                local zombie = getClosestZombie()
-                if zombie then
-                    attackZombie(zombie)
-                else
-                    wait(1)
-                end
+                wait(1)
             end
         else
             wait(1)
