@@ -1,0 +1,87 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local AntiAFK = require(game.ServerStorage:WaitForChild("AntiAFKModule"))
+
+AntiAFK.Start()
+
+-- สร้าง ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- ปุ่มเล็กมุมขวาบน
+local MainButton = Instance.new("TextButton")
+MainButton.Size = UDim2.new(0,50,0,50)
+MainButton.Position = UDim2.new(0.93,0,0.05,0)
+MainButton.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MainButton.BackgroundTransparency = 0.4
+MainButton.TextColor3 = Color3.fromRGB(255,255,255)
+MainButton.Text = "☰"
+MainButton.TextScaled = true
+MainButton.Parent = ScreenGui
+MainButton.ZIndex = 10
+
+-- กรอบ UI โมเดิร์น
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0,220,0,120)
+Frame.Position = UDim2.new(0.7,0,0.05,0)
+Frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+Frame.BackgroundTransparency = 0.3
+Frame.BorderSizePixel = 0
+Frame.Visible = true
+Frame.Parent = ScreenGui
+Frame.ZIndex = 9
+
+-- ข้อมูลผู้เล่น
+local InfoLabel = Instance.new("TextLabel")
+InfoLabel.Size = UDim2.new(1,-10,0.5,0)
+InfoLabel.Position = UDim2.new(0,5,0,5)
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.TextColor3 = Color3.fromRGB(255,255,255)
+InfoLabel.TextScaled = true
+InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
+InfoLabel.Text = ""
+InfoLabel.Parent = Frame
+
+-- ปุ่ม Toggle Anti-AFK
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0,200,0,35)
+ToggleButton.Position = UDim2.new(0.5,-100,0.55,0)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(50,200,50)
+ToggleButton.TextColor3 = Color3.fromRGB(255,255,255)
+ToggleButton.Text = "Anti-AFK: OFF"
+ToggleButton.TextScaled = true
+ToggleButton.Parent = Frame
+
+-- ปุ่มปิด UI
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0,30,0,30)
+CloseButton.Position = UDim2.new(1,-35,0,5)
+CloseButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
+CloseButton.TextColor3 = Color3.fromRGB(255,255,255)
+CloseButton.Text = "X"
+CloseButton.TextScaled = true
+CloseButton.Parent = Frame
+
+-- Toggle Anti-AFK
+ToggleButton.MouseButton1Click:Connect(function()
+    local state = AntiAFK.Toggle()
+    ToggleButton.Text = "Anti-AFK: " .. (state and "ON" or "OFF")
+    ToggleButton.BackgroundColor3 = state and Color3.fromRGB(50,200,50) or Color3.fromRGB(200,50,50)
+end)
+
+-- เปิด/ปิด UI
+MainButton.MouseButton1Click:Connect(function()
+    Frame.Visible = not Frame.Visible
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    Frame.Visible = false
+end)
+
+-- อัพเดตข้อมูลเรียลไทม์
+while true do
+    InfoLabel.Text = string.format("Name: %s\nUserId: %d\nAnti-AFK: %s",
+        player.Name, player.UserId, AntiAFK.isActive and "ON" or "OFF")
+    wait(0.5)
+end
