@@ -1,4 +1,4 @@
--- LocalScript ใส่ StarterPlayerScripts
+--====================== Setup ======================
 local player = game.Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local RunService = game:GetService("RunService")
@@ -6,37 +6,29 @@ local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 
--- =================== Anti AFK / Anti Kick ===================
+-- Anti AFK
 player.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
 end)
-local mt=getrawmetatable(game)
-local old=mt.__namecall
-setreadonly(mt,false)
-mt.__namecall=newcclosure(function(self,...)
-    if getnamecallmethod()=="Kick" then warn("🚫 Kick blocked") return end
-    return old(self,...)
-end)
 
--- =================== Update Character ===================
-local function updateChar() char=player.Character or player.CharacterAdded:Wait() end
+-- Character update
+local function updateChar() char = player.Character or player.CharacterAdded:Wait() end
 player.CharacterAdded:Connect(updateChar)
 
--- =================== UI ===================
+--====================== UI ======================
 local playerGui = player:WaitForChild("PlayerGui")
-if playerGui:FindFirstChild("ZombieHubUltimate") then playerGui.ZombieHubUltimate:Destroy() end
+if playerGui:FindFirstChild("ZombieHub3") then playerGui.ZombieHub3:Destroy() end
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "ZombieHubUltimate"
+gui.Name = "ZombieHub3"
 gui.ResetOnSpawn = false
-gui.Enabled = true
 gui.Parent = playerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0,420,0,580)
+frame.Size = UDim2.new(0,500,0,650)
 frame.Position = UDim2.new(0.05,0,0.15,0)
-frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
@@ -47,7 +39,7 @@ title.BackgroundTransparency = 1
 title.TextColor3 = Color3.fromRGB(255,255,255)
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 20
-title.Text = "Hunty Zombie Hub Ultimate 2.6"
+title.Text = "Hunty Zombie Hub 3.1"
 title.Parent = frame
 
 local layout = Instance.new("UIListLayout")
@@ -55,7 +47,7 @@ layout.Padding = UDim.new(0,6)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Parent = frame
 
--- =================== Notifications ===================
+-- Notification
 local notifFrame = Instance.new("Frame")
 notifFrame.Size = UDim2.new(0,250,0,30)
 notifFrame.Position = UDim2.new(0.5,-125,0.05,0)
@@ -76,29 +68,23 @@ notifLabel.Parent = notifFrame
 local function showNotification(msg,duration)
     notifLabel.Text = msg
     notifFrame.Visible = true
-    local tween = TweenService:Create(notifFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0})
+    local tween = TweenService:Create(notifFrame, TweenInfo.new(0.3), {BackgroundTransparency=0})
     tween:Play()
-    task.delay(duration or 2, function()
-        local tweenOut = TweenService:Create(notifFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1})
+    task.delay(duration or 2,function()
+        local tweenOut = TweenService:Create(notifFrame, TweenInfo.new(0.3), {BackgroundTransparency=1})
         tweenOut:Play()
         tweenOut.Completed:Wait()
-        notifFrame.Visible = false
+        notifFrame.Visible=false
     end)
 end
 
--- =================== Tables / Settings ===================
+--====================== Toggles ======================
 local toggles = {}
-local sliders = {}
-local keybinds = {Z=Enum.KeyCode.Z,X=Enum.KeyCode.X,C=Enum.KeyCode.C,E=Enum.KeyCode.E,G=Enum.KeyCode.G}
-_G.farmSpeed = 10
-_G.attackRange = 15
-local targetZombieName = "" -- ชื่อซอมบี้เป้าหมายเฉพาะ
 local skillSequence = {"Z","X","C","E","G"}
 local skillIndex = 1
 local skillCooldown = 0.3
 local lastSkill = tick()
 
--- =================== UI Functions ===================
 local function makeToggle(name)
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(1,0,0,35)
@@ -115,12 +101,21 @@ local function makeToggle(name)
         b.Text = name..(toggles[name] and ": ON" or ": OFF")
         b.BackgroundColor3 = toggles[name] and Color3.fromRGB(0,170,0) or Color3.fromRGB(50,50,50)
         showNotification(name.." "..(toggles[name] and "Enabled" or "Disabled"))
-        local sound = Instance.new("Sound", gui)
-        sound.SoundId = "rbxassetid://9118822386"
-        sound:Play()
-        game.Debris:AddItem(sound,1)
     end)
 end
+
+makeToggle("Auto Farm")
+makeToggle("God Mode")
+makeToggle("Auto Collect")
+makeToggle("Auto Buy")
+makeToggle("ESP")
+makeToggle("Auto Restart")
+
+--====================== Sliders ======================
+local sliders = {}
+_G.attackRange = 15
+_G.collectRange = 15
+_G.farmSpeed = 10
 
 local function makeSlider(name,min,max,default,callback)
     local frameSlider = Instance.new("Frame")
@@ -147,8 +142,8 @@ local function makeSlider(name,min,max,default,callback)
     slider.MouseButton1Down:Connect(function()
         local conn
         conn = UserInputService.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                local ratio = math.clamp((input.Position.X - slider.AbsolutePosition.X)/slider.AbsoluteSize.X,0,1)
+            if input.UserInputType==Enum.UserInputType.MouseMovement then
+                local ratio = math.clamp((input.Position.X-slider.AbsolutePosition.X)/slider.AbsoluteSize.X,0,1)
                 local value = math.floor(min + (max-min)*ratio)
                 label.Text = name.." "..value
                 callback(value)
@@ -159,46 +154,74 @@ local function makeSlider(name,min,max,default,callback)
     end)
 end
 
--- =================== Skill Buttons ===================
+makeSlider("Attack Range",1,50,15,function(v) _G.attackRange=v end)
+makeSlider("Collect Range",1,50,15,function(v) _G.collectRange=v end)
+makeSlider("Farm Speed",5,50,10,function(v) _G.farmSpeed=v end)
+
+--====================== Skill Buttons ======================
 local skillFrame = Instance.new("Frame")
 skillFrame.Size = UDim2.new(1,0,0,50)
 skillFrame.BackgroundColor3 = Color3.fromRGB(50,50,50)
 skillFrame.Parent = frame
 
-local function makeSkillButton(key)
+for _,k in pairs(skillSequence) do
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(0,60,1,0)
-    b.Position = UDim2.new(#skillFrame:GetChildren()*0.15,0,0,0)
+    b.Position = UDim2.new((#skillFrame:GetChildren()-1)*0.15,0,0,0)
     b.BackgroundColor3 = Color3.fromRGB(70,70,70)
     b.TextColor3 = Color3.fromRGB(255,255,255)
     b.Font = Enum.Font.SourceSansBold
     b.TextSize = 18
-    b.Text = key
+    b.Text = k
     b.Parent = skillFrame
 
     b.MouseButton1Click:Connect(function()
-        local kc = Enum.KeyCode[key]
+        local kc = Enum.KeyCode[k]
         UserInputService.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard,KeyCode=kc},false)
-        showNotification("Skill "..key.." used")
+        showNotification("Skill "..k.." used")
     end)
 end
 
-for _,k in pairs(skillSequence) do
-    makeSkillButton(k)
-end
-
--- =================== Helper Functions ===================
+--====================== Helper Functions ======================
 local function nearestZombie()
-    local nearest, dist=nil, math.huge
+    local nearest,dist = nil, math.huge
     if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
     for _,z in pairs(workspace:GetChildren()) do
         if z:FindFirstChild("Humanoid") and z:FindFirstChild("HumanoidRootPart") and z.Humanoid.Health>0 then
-            if targetZombieName~="" and z.Name ~= targetZombieName then continue end
             local d = (z.HumanoidRootPart.Position-char.HumanoidRootPart.Position).Magnitude
-            if d < dist then nearest, dist = z, d end
+            if d<_G.attackRange and d<dist then nearest,dist = z,d end
         end
     end
     return nearest
+end
+
+local function useNextSkill(target)
+    if tick()-lastSkill>=skillCooldown then
+        local key = skillSequence[skillIndex]
+        if key then
+            UserInputService.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard,KeyCode=Enum.KeyCode[key]},false)
+            skillIndex = skillIndex+1
+            if skillIndex>#skillSequence then skillIndex=1 end
+            lastSkill=tick()
+        end
+    end
+end
+
+local function collectNearbyItems()
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local root = char.HumanoidRootPart
+    for _, item in pairs(workspace:GetChildren()) do
+        if item:IsA("Part") and (item.Name=="Coin" or item.Name=="HealthPack") then
+            local distance = (item.Position-root.Position).Magnitude
+            if distance<=_G.collectRange then
+                char.Humanoid:MoveTo(item.Position + Vector3.new(0,1,0))
+                if item:FindFirstChild("TouchInterest") then
+                    firetouchinterest(root,item,0)
+                    firetouchinterest(root,item,1)
+                end
+            end
+        end
+    end
 end
 
 local function highlight(z)
@@ -211,52 +234,22 @@ local function highlight(z)
     end
 end
 
-local function useNextSkill(target)
-    if tick() - lastSkill >= skillCooldown then
-        local key = skillSequence[skillIndex]
-        if key then
-            local kc = Enum.KeyCode[key]
-            UserInputService.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard,KeyCode=kc},false)
-            skillIndex = skillIndex + 1
-            if skillIndex > #skillSequence then skillIndex = 1 end
-            lastSkill = tick()
-        end
-    end
-end
-
--- =================== Auto Collect Coins & Health ===================
-local function collectNearbyItems()
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    local root = char.HumanoidRootPart
-    for _, item in pairs(workspace:GetChildren()) do
-        if item:IsA("Part") and (item.Name == "Coin" or item.Name == "HealthPack") then
-            local distance = (item.Position - root.Position).Magnitude
-            if distance <= 15 then
-                char.Humanoid:MoveTo(item.Position + Vector3.new(0,1,0))
-                if item:FindFirstChild("TouchInterest") then
-                    firetouchinterest(root, item, 0)
-                    firetouchinterest(root, item, 1)
-                end
-            end
-        end
-    end
-end
-
--- =================== Main Loop ===================
-RunService.RenderStepped:Connect(function(delta)
+--====================== Main Loop ======================
+RunService.RenderStepped:Connect(function()
     updateChar()
-    
+
     -- Auto Farm
-    local z = nearestZombie()
-    if toggles["Auto Farm"] and z and char:FindFirstChild("HumanoidRootPart") then
-        local targetPos = z.HumanoidRootPart.Position + Vector3.new(0,1,0)
-        char.Humanoid:MoveTo(targetPos)
-        useNextSkill(z)
-        local tool = char:FindFirstChildOfClass("Tool")
-        if tool then tool:Activate() end
-        local gun = char:FindFirstChild("Gun")
-        if gun and gun:FindFirstChild("Shoot") then
-            pcall(function() gun.Shoot:FireServer(z.HumanoidRootPart.Position) end)
+    if toggles["Auto Farm"] then
+        local z = nearestZombie()
+        if z and char:FindFirstChild("HumanoidRootPart") then
+            char.Humanoid:MoveTo(z.HumanoidRootPart.Position + Vector3.new(0,1,0))
+            useNextSkill(z)
+            local tool = char:FindFirstChildOfClass("Tool")
+            if tool then tool:Activate() end
+            local gun = char:FindFirstChild("Gun")
+            if gun and gun:FindFirstChild("Shoot") then
+                pcall(function() gun.Shoot:FireServer(z.HumanoidRootPart.Position) end)
+            end
         end
     end
 
@@ -265,12 +258,17 @@ RunService.RenderStepped:Connect(function(delta)
         char.Humanoid.Health = char.Humanoid.MaxHealth
     end
 
-    -- Auto Collect Coins & Health
-    if toggles["Auto Collect"] then
-        collectNearbyItems()
+    -- Auto Collect
+    if toggles["Auto Collect"] then collectNearbyItems() end
+
+    -- ESP
+    if toggles["ESP"] then
+        for _,m in pairs(workspace:GetChildren()) do
+            if m:FindFirstChild("Humanoid") then highlight(m) end
+        end
     end
 
-    -- Auto Buy
+    -- Auto Buy (ตัวอย่าง)
     if toggles["Auto Buy"] then
         local shop = workspace:FindFirstChild("Shop")
         if shop then
@@ -278,26 +276,19 @@ RunService.RenderStepped:Connect(function(delta)
                 if item:IsA("Tool") then
                     local clone = item:Clone()
                     clone.Parent = player.Backpack
-                    showNotification("Bought "..item.Name,1)
                 end
             end
         end
     end
 
-    -- ESP Highlight
-    if toggles["ESP"] then
-        for _,m in pairs(workspace:GetChildren()) do
-            if m:FindFirstChild("Humanoid") then highlight(m) end
+    -- Auto Restart หลังจบเกม (ตัวอย่าง)
+    if toggles["Auto Restart"] then
+        if workspace:FindFirstChild("GameEnd") then
+            local startButton = workspace.GameEnd:FindFirstChild("StartButton")
+            if startButton then
+                fireclickdetector(startButton.ClickDetector)
+                showNotification("Game restarted",2)
+            end
         end
     end
 end)
-
--- =================== Setup Default Toggles ===================
-makeToggle("Auto Farm")
-makeToggle("God Mode")
-makeToggle("Auto Collect")
-makeToggle("Auto Buy")
-makeToggle("ESP")
-
-makeSlider("Farm Speed",1,20,_G.farmSpeed,function(v) _G.farmSpeed=v end)
-makeSlider("Attack Range",1,50,_G.attackRange,function(v) _G.attackRange=v end)
