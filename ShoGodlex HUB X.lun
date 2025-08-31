@@ -3,9 +3,9 @@ local player = game.Players.LocalPlayer
 local ws = game:GetService("Workspace")
 local runService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
-local ts = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
--- Player variables
+-- Player Variables
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local humanoid = char:WaitForChild("Humanoid")
@@ -17,17 +17,18 @@ local Settings = {
     AutoFight = true,
     AutoHeal = true,
     GrabCoins = true,
-    AttackDelay = 0.3,
-    HealThreshold = 50 -- HP ต่ำกว่านี้จะรักษา
+    AutoDoor = true,
+    Fly = true,
+    AttackDelay = 0.2,
+    HealThreshold = 50,
+    FlySpeed = 50
 }
 
 -- Load / Save Settings
 local function loadSettings()
     local success, result = pcall(function()
         local data = player:FindFirstChild("ShoGodlexSettings")
-        if data then
-            return HttpService:JSONDecode(data.Value)
-        end
+        if data then return HttpService:JSONDecode(data.Value) end
     end)
     if success and result then
         Settings = result
@@ -46,12 +47,14 @@ end
 
 loadSettings()
 
--- UI
+-- =============================
+-- UI โมเดิร์น
+-- =============================
 local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0,280,0,260)
+Frame.Size = UDim2.new(0,280,0,360)
 Frame.Position = UDim2.new(0.7,0,0.2,0)
 Frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
 Frame.BackgroundTransparency = 0.15
@@ -70,6 +73,7 @@ TitleBar.TextSize = 18
 TitleBar.Text = "ShoGodlex HUB X | v1.0"
 Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0,10)
 
+-- Close Button
 local CloseBtn = Instance.new("TextButton", TitleBar)
 CloseBtn.Size = UDim2.new(0,30,0,30)
 CloseBtn.Position = UDim2.new(1,-30,0,0)
@@ -91,7 +95,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Toggle Buttons
+-- Toggle Buttons Function
 local function createToggle(name, yPos, key)
     local btn = Instance.new("TextButton", Frame)
     btn.Size = UDim2.new(0,220,0,35)
@@ -114,40 +118,27 @@ createToggle("Anti-AFK", 85, "AntiAFK")
 createToggle("Auto-Fight", 130, "AutoFight")
 createToggle("Auto-Heal", 175, "AutoHeal")
 createToggle("Grab Coins", 220, "GrabCoins")
+createToggle("Auto Door", 265, "AutoDoor")
+createToggle("Fly", 310, "Fly")
 
--- Anti-AFK
+-- =============================
+-- Anti-AFK & Godmode & Auto-Heal
+-- =============================
 spawn(function()
     while true do
-        if Settings.AntiAFK then
-            hrp.CFrame = hrp.CFrame * CFrame.new(0,0,0.1)
-        end
-        wait(60)
-    end
-end)
-
--- Godmode
-spawn(function()
-    while true do
-        if Settings.Godmode and humanoid.Health < humanoid.MaxHealth then
-            humanoid.Health = humanoid.MaxHealth
+        if Settings.AntiAFK then hrp.CFrame = hrp.CFrame * CFrame.new(0,0,0.1) end
+        if Settings.Godmode then humanoid.Health = humanoid.MaxHealth end
+        if Settings.AutoHeal and humanoid.Health < Settings.HealThreshold then
+            local tool = char:FindFirstChildOfClass("Tool")
+            if tool then tool:Activate() end
         end
         wait(0.1)
     end
 end)
 
--- Auto-Heal
-spawn(function()
-    while true do
-        if Settings.AutoHeal and humanoid.Health < Settings.HealThreshold then
-            -- ใช้ Potion / Heal Tool
-            local tool = char:FindFirstChildOfClass("Tool")
-            if tool then tool:Activate() end
-        end
-        wait(0.5)
-    end
-end)
-
+-- =============================
 -- Find closest Zombie
+-- =============================
 local function getClosestZombie()
     local closest = nil
     local minDist = math.huge
@@ -164,49 +155,70 @@ local function getClosestZombie()
     return closest
 end
 
--- Attack Zombie Local + ใช้ Skill
+-- =============================
+-- Attack Zombie + Use Tool / Skill
+-- =============================
 local function attackZombie(zombie)
     if not zombie then return end
-    local direction = (zombie.HumanoidRootPart.Position - hrp.Position).Unit
-    hrp.CFrame = CFrame.new(zombie.HumanoidRootPart.Position - direction*3)
-
-    -- ใช้ Tool / Skill
+    local targetPos = zombie.HumanoidRootPart.Position - (zombie.HumanoidRootPart.Position - hrp.Position).Unit*2
+    hrp.CFrame = CFrame.new(targetPos.X, targetPos.Y + 3, targetPos.Z)
     local tool = char:FindFirstChildOfClass("Tool")
     if tool then tool:Activate() end
-
-    -- ทำ Damage local
-    if zombie:FindFirstChild("Humanoid") then
-        zombie.Humanoid:TakeDamage(5)
-    end
+    if zombie:FindFirstChild("Humanoid") then zombie.Humanoid:TakeDamage(10) end
 end
 
+-- =============================
 -- Grab Coins
+-- =============================
 local function grabCoins()
     if not Settings.GrabCoins then return end
     for _,coin in pairs(ws:GetChildren()) do
         if coin.Name:match("Coin") and coin:FindFirstChild("Handle") then
             hrp.CFrame = CFrame.new(coin.Handle.Position)
-            wait(0.1)
+            wait(0.05)
         end
     end
 end
 
--- Auto-Fight Loop
-spawn(function()
-    while true do
-        if Settings.AutoFight then
-            if humanoid.Health <= 0 then
-                player:LoadCharacter()
-                char = player.Character or player.CharacterAdded:Wait()
-                hrp = char:WaitForChild("HumanoidRootPart")
-                humanoid = char:WaitForChild("Humanoid")
-            end
-            local zombie = getClosestZombie()
-            if zombie then
-                attackZombie(zombie)
-            end
+-- =============================
+-- Auto Door
+-- =============================
+local function autoOpenDoors()
+    if not Settings.AutoDoor then return end
+    for _,door in pairs(ws:GetChildren()) do
+        if door.Name:match("Door") and door:FindFirstChild("ClickDetector") then
+            fireclickdetector(door.ClickDetector)
         end
-        grabCoins()
-        wait(Settings.AttackDelay)
     end
-end)
+end
+
+-- =============================
+-- Fly Mobile (UI Buttons)
+-- =============================
+local flying = false
+local bv, bg
+local moveDir = Vector3.new()
+
+-- Create Mobile Fly Buttons
+local function createFlyButton(name,pos,dir)
+    local btn = Instance.new("TextButton", ScreenGui)
+    btn.Size = UDim2.new(0,60,0,60)
+    btn.Position = pos
+    btn.Text = name
+    btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.AutoButtonColor = true
+    local pressed = false
+
+    btn.MouseButton1Down:Connect(function()
+        pressed = true
+        moveDir = moveDir + dir
+    end)
+    btn.MouseButton1Up:Connect(function()
+        pressed = false
+        moveDir = moveDir - dir
+    end)
+end
+
+-- ปุ่ม 6 ทิศทาง
+createFlyButton("↑", UDim2.new(0.8,0,0.7,0),
