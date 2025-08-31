@@ -1,15 +1,16 @@
---// Services
+-- Services
 local player = game.Players.LocalPlayer
 local ws = game:GetService("Workspace")
 local rs = game:GetService("ReplicatedStorage")
 local runService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
---// Player Variables
+-- Player variables
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local humanoid = char:WaitForChild("Humanoid")
 
---// Settings
+-- Default settings
 local Settings = {
     Godmode = true,
     AntiAFK = true,
@@ -17,41 +18,77 @@ local Settings = {
     AttackDelay = 0.5
 }
 
---// RemoteEvents
-local attackEvent = rs:FindFirstChild("AttackEvent")
+-- Load saved settings if exist
+local function loadSettings()
+    local success, result = pcall(function()
+        local data = player:FindFirstChild("HuntySettings")
+        if data then
+            return HttpService:JSONDecode(data.Value)
+        end
+    end)
+    if success and result then
+        Settings = result
+    end
+end
 
---// UI
+-- Save settings
+local function saveSettings()
+    local data = player:FindFirstChild("HuntySettings")
+    if not data then
+        data = Instance.new("StringValue")
+        data.Name = "HuntySettings"
+        data.Parent = player
+    end
+    data.Value = HttpService:JSONEncode(Settings)
+end
+
+loadSettings()
+
+-- RemoteEvents (ตรวจสอบชื่อจริงในเกม)
+local attackEvent = rs:FindFirstChild("AttackEvent") -- ปรับชื่อจริงในเกม
+
+-- UI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 220, 0, 150)
-Frame.Position = UDim2.new(0.8,0,0.1,0)
-Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-Frame.BackgroundTransparency = 0.3
+Frame.Size = UDim2.new(0, 220, 0, 160)
+Frame.Position = UDim2.new(0.7,0,0.2,0)
+Frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+Frame.BackgroundTransparency = 0.15
 Frame.BorderSizePixel = 0
 Frame.Active = true
-Frame.Draggable = true -- ทำให้ลากได้
+Frame.Draggable = true
 
-local function createToggleButton(name, yPos, key)
+local UICorner = Instance.new("UICorner", Frame)
+UICorner.CornerRadius = UDim.new(0,10)
+
+local function createToggle(name, yPos, key)
     local btn = Instance.new("TextButton", Frame)
-    btn.Size = UDim2.new(0, 200, 0, 35)
-    btn.Position = UDim2.new(0, 10, 0, yPos)
+    btn.Size = UDim2.new(0,200,0,35)
+    btn.Position = UDim2.new(0,10,0,yPos)
     btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    btn.TextColor3 = Color3.new(1,1,1)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
     btn.Text = name.." : "..(Settings[key] and "ON" or "OFF")
+    btn.AutoButtonColor = true
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0,8)
+
     btn.MouseButton1Click:Connect(function()
         Settings[key] = not Settings[key]
         btn.Text = name.." : "..(Settings[key] and "ON" or "OFF")
+        saveSettings()
     end)
 end
 
-createToggleButton("Godmode", 10, "Godmode")
-createToggleButton("Anti-AFK", 55, "AntiAFK")
-createToggleButton("Auto-Fight", 100, "AutoFight")
+createToggle("Godmode", 10, "Godmode")
+createToggle("Anti-AFK", 55, "AntiAFK")
+createToggle("Auto-Fight", 100, "AutoFight")
 
---// Anti-AFK
+-- Anti-AFK
 spawn(function()
     while true do
         if Settings.AntiAFK then
@@ -61,7 +98,7 @@ spawn(function()
     end
 end)
 
---// Godmode
+-- Godmode
 spawn(function()
     while true do
         if Settings.Godmode and humanoid.Health < humanoid.MaxHealth then
@@ -71,11 +108,11 @@ spawn(function()
     end
 end)
 
---// หา Zombie ใกล้สุด
+-- Find closest Zombie
 local function getClosestZombie()
     local closest = nil
     local minDist = math.huge
-    for _, z in pairs(ws:FindFirstChild("Zombies") or {}) do
+    for _,z in pairs(ws:FindFirstChild("Zombies") or {}) do
         if z:FindFirstChild("Humanoid") and z.Humanoid.Health > 0 then
             local dist = (z.HumanoidRootPart.Position - hrp.Position).Magnitude
             if dist < minDist then
@@ -87,7 +124,7 @@ local function getClosestZombie()
     return closest
 end
 
---// โจมตี Zombie
+-- Attack Zombie
 local function attackZombie(zombie)
     if not zombie then return end
     hrp.CFrame = zombie.HumanoidRootPart.CFrame + Vector3.new(0,0,3)
@@ -97,7 +134,7 @@ local function attackZombie(zombie)
     end
 end
 
---// Auto-Fight Loop
+-- Auto-Fight Loop
 spawn(function()
     while true do
         if Settings.AutoFight then
@@ -107,7 +144,6 @@ spawn(function()
                 hrp = char:WaitForChild("HumanoidRootPart")
                 humanoid = char:WaitForChild("Humanoid")
             end
-
             local zombie = getClosestZombie()
             if zombie then
                 attackZombie(zombie)
