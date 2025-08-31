@@ -1,0 +1,209 @@
+-- LocalScript ใส่ StarterPlayerScripts
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
+
+-- Anti AFK / Anti Kick
+player.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+end)
+local mt=getrawmetatable(game)
+local old=mt.__namecall
+setreadonly(mt,false)
+mt.__namecall=newcclosure(function(self,...)
+    if getnamecallmethod()=="Kick" then warn("🚫 Kick blocked") return end
+    return old(self,...)
+end)
+
+-- Update Character
+local function updateChar() char=player.Character or player.CharacterAdded:Wait() end
+player.CharacterAdded:Connect(updateChar)
+
+-- =================== UI ===================
+local gui = Instance.new("ScreenGui",player:WaitForChild("PlayerGui"))
+gui.Name="ZombieHubUltimate"
+
+-- Main Frame
+local frame = Instance.new("Frame",gui)
+frame.Size = UDim2.new(0,300,0,450)
+frame.Position = UDim2.new(0.05,0,0.3,0)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Active = true
+frame.Draggable = true
+
+local title = Instance.new("TextLabel",frame)
+title.Size = UDim2.new(1,0,0,30)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 20
+title.Text = "Hunty Zombie Hub Ultimate"
+
+local layout = Instance.new("UIListLayout",frame)
+layout.Padding = UDim.new(0,6)
+
+-- =================== Tables ===================
+local toggles = {}
+local sliders = {}
+local keybinds = {Z=Enum.KeyCode.Z,X=Enum.KeyCode.X,C=Enum.KeyCode.C,E=Enum.KeyCode.E,G=Enum.KeyCode.G}
+_G.farmSpeed = 10
+_G.attackRange = 10
+
+-- =================== Functions ===================
+local function makeToggle(name)
+    local b=Instance.new("TextButton",frame)
+    b.Size=UDim2.new(1,0,0,35)
+    b.BackgroundColor3=Color3.fromRGB(50,50,50)
+    b.TextColor3=Color3.fromRGB(255,255,255)
+    b.Font=Enum.Font.SourceSansBold
+    b.TextSize=18
+    b.Text=name..": OFF"
+    toggles[name]=false
+    b.MouseButton1Click:Connect(function()
+        toggles[name]=not toggles[name]
+        b.Text=name..(toggles[name] and ": ON" or ": OFF")
+        b.BackgroundColor3=toggles[name] and Color3.fromRGB(0,170,0) or Color3.fromRGB(50,50,50)
+    end)
+end
+
+local function makeSlider(name,min,max,default,callback)
+    local frameSlider=Instance.new("Frame",frame)
+    frameSlider.Size=UDim2.new(1,0,0,50)
+    frameSlider.BackgroundColor3=Color3.fromRGB(40,40,40)
+    
+    local label=Instance.new("TextLabel",frameSlider)
+    label.Size=UDim2.new(1,0,0,20)
+    label.BackgroundTransparency=1
+    label.TextColor3=Color3.fromRGB(255,255,255)
+    label.Font=Enum.Font.SourceSans
+    label.TextSize=16
+    label.Text=name.." "..default
+
+    local slider=Instance.new("TextButton",frameSlider)
+    slider.Size=UDim2.new(1,0,0,20)
+    slider.Position=UDim2.new(0,0,0,25)
+    slider.BackgroundColor3=Color3.fromRGB(70,70,70)
+    slider.Text=""
+
+    slider.MouseButton1Down:Connect(function()
+        local conn
+        conn = UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType==Enum.UserInputType.MouseMovement then
+                local ratio=math.clamp((input.Position.X - slider.AbsolutePosition.X)/slider.AbsoluteSize.X,0,1)
+                local value = math.floor(min + (max-min)*ratio)
+                label.Text=name.." "..value
+                callback(value)
+            end
+        end)
+        UserInputService.InputEnded:Wait()
+        conn:Disconnect()
+    end)
+end
+
+-- =================== Buttons ===================
+makeToggle("Auto Farm")
+makeToggle("Auto Buy")
+makeToggle("God Mode")
+makeToggle("ESP")
+makeSlider("Farm Speed",1,50,_G.farmSpeed,function(val) _G.farmSpeed=val end)
+makeSlider("Attack Range",1,50,_G.attackRange,function(val) _G.attackRange=val end)
+
+-- =================== Skill System ===================
+UserInputService.InputBegan:Connect(function(input,gpe)
+    if not gpe then
+        local hum=char:FindFirstChild("Humanoid")
+        local z
+        local nearestDist = math.huge
+        for _,m in pairs(workspace:GetChildren()) do
+            if m:FindFirstChild("Humanoid") and m:FindFirstChild("HumanoidRootPart") then
+                local d=(m.HumanoidRootPart.Position-char.HumanoidRootPart.Position).Magnitude
+                if d<nearestDist then nearestDist=d; z=m end
+            end
+        end
+        if input.KeyCode==keybinds.Z then
+            char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame*CFrame.new(0,0,-10)
+        elseif input.KeyCode==keybinds.X then
+            for _,m in pairs(workspace:GetChildren()) do
+                if m:FindFirstChild("Humanoid") and (m.HumanoidRootPart.Position-char.HumanoidRootPart.Position).Magnitude<20 then
+                    m.Humanoid:TakeDamage(25)
+                end
+            end
+        elseif input.KeyCode==keybinds.C then
+            if hum then hum.Health = math.min(hum.MaxHealth,hum.Health+50) end
+        elseif input.KeyCode==keybinds.E and z then
+            z.Humanoid:TakeDamage(40)
+        elseif input.KeyCode==keybinds.G and z then
+            char:MoveTo(z.HumanoidRootPart.Position + Vector3.new(0,3,0))
+        end
+    end
+end)
+
+-- =================== Helper Functions ===================
+local function nearestZombie()
+    local nearest, dist=nil, math.huge
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+    for _,z in pairs(workspace:GetChildren()) do
+        if z:FindFirstChild("Humanoid") and z:FindFirstChild("HumanoidRootPart") and z.Humanoid.Health>0 then
+            local d=(z.HumanoidRootPart.Position-char.HumanoidRootPart.Position).Magnitude
+            if d<dist then nearest,dist=z,d end
+        end
+    end
+    return nearest
+end
+
+local function highlight(z)
+    if not z:FindFirstChild("Highlight") then
+        local hl=Instance.new("Highlight")
+        hl.FillColor=Color3.fromRGB(255,0,0)
+        hl.OutlineColor=Color3.fromRGB(255,255,255)
+        hl.Adornee=z
+        hl.Parent=z
+    end
+end
+
+-- =================== Main Loop ===================
+RunService.RenderStepped:Connect(function()
+    updateChar()
+    local z = nearestZombie()
+    if toggles["Auto Farm"] and z then
+        -- Move to zombie + offset
+        char:MoveTo(z.HumanoidRootPart.Position + Vector3.new(0,3,0))
+        local tool=char:FindFirstChildOfClass("Tool")
+        if tool then tool:Activate() end
+        -- Gun shoot
+        local gun = char:FindFirstChild("Gun")
+        if gun and gun:FindFirstChild("Shoot") then
+            pcall(function()
+                gun.Shoot:FireServer(z.HumanoidRootPart.Position)
+            end)
+        end
+    end
+
+    -- Auto Buy
+    if toggles["Auto Buy"] then
+        local shop = workspace:FindFirstChild("Shop")
+        if shop then
+            for _,item in pairs(shop:GetChildren()) do
+                if item:IsA("Tool") then
+                    local clone=item:Clone()
+                    clone.Parent=player.Backpack
+                end
+            end
+        end
+    end
+
+    -- God Mode
+    if toggles["God Mode"] and char:FindFirstChild("Humanoid") then
+        char.Humanoid.Health = char.Humanoid.MaxHealth
+    end
+
+    -- ESP
+    if toggles["ESP"] then
+        for _,m in pairs(workspace:GetChildren()) do
+            if m:FindFirstChild("Humanoid") then highlight(m) end
+        end
+    end
+end)
