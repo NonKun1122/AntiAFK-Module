@@ -4,31 +4,28 @@ local char = player.Character or player.CharacterAdded:Wait()
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
+local TweenService = game:GetService("TweenService")
 
--- Anti AFK / Anti Kick
+-- =================== Anti AFK / Anti Kick ===================
 player.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
 end)
-local mt = getrawmetatable(game)
-local old = mt.__namecall
+local mt=getrawmetatable(game)
+local old=mt.__namecall
 setreadonly(mt,false)
-mt.__namecall = newcclosure(function(self,...)
+mt.__namecall=newcclosure(function(self,...)
     if getnamecallmethod()=="Kick" then warn("🚫 Kick blocked") return end
     return old(self,...)
 end)
 
--- Update Character
+-- =================== Update Character ===================
 local function updateChar() char=player.Character or player.CharacterAdded:Wait() end
 player.CharacterAdded:Connect(updateChar)
 
 -- =================== UI ===================
 local playerGui = player:WaitForChild("PlayerGui")
-
--- ลบ UI เก่า
-if playerGui:FindFirstChild("ZombieHubUltimate") then
-    playerGui.ZombieHubUltimate:Destroy()
-end
+if playerGui:FindFirstChild("ZombieHubUltimate") then playerGui.ZombieHubUltimate:Destroy() end
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "ZombieHubUltimate"
@@ -36,30 +33,58 @@ gui.ResetOnSpawn = false
 gui.Enabled = true
 gui.Parent = playerGui
 
--- Main Frame
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 320, 0, 480)
-frame.Position = UDim2.new(0.05,0,0.2,0)
+frame.Size = UDim2.new(0,380,0,520)
+frame.Position = UDim2.new(0.05,0,0.15,0)
 frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
 
--- Title
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,0,0,30)
 title.BackgroundTransparency = 1
 title.TextColor3 = Color3.fromRGB(255,255,255)
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 20
-title.Text = "Hunty Zombie Hub Ultimate 2.2"
+title.Text = "Hunty Zombie Hub Ultimate 2.5"
 title.Parent = frame
 
--- UI Layout
 local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0,6)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Parent = frame
+
+-- =================== Notifications ===================
+local notifFrame = Instance.new("Frame")
+notifFrame.Size = UDim2.new(0,250,0,30)
+notifFrame.Position = UDim2.new(0.5,-125,0.05,0)
+notifFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+notifFrame.AnchorPoint = Vector2.new(0.5,0)
+notifFrame.Parent = gui
+notifFrame.Visible = false
+
+local notifLabel = Instance.new("TextLabel")
+notifLabel.Size = UDim2.new(1,0,1,0)
+notifLabel.BackgroundTransparency = 1
+notifLabel.TextColor3 = Color3.fromRGB(255,255,255)
+notifLabel.Font = Enum.Font.SourceSansBold
+notifLabel.TextSize = 16
+notifLabel.Text = ""
+notifLabel.Parent = notifFrame
+
+local function showNotification(msg,duration)
+    notifLabel.Text = msg
+    notifFrame.Visible = true
+    local tween = TweenService:Create(notifFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0})
+    tween:Play()
+    task.delay(duration or 2, function()
+        local tweenOut = TweenService:Create(notifFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1})
+        tweenOut:Play()
+        tweenOut.Completed:Wait()
+        notifFrame.Visible = false
+    end)
+end
 
 -- =================== Tables ===================
 local toggles = {}
@@ -67,6 +92,7 @@ local sliders = {}
 local keybinds = {Z=Enum.KeyCode.Z,X=Enum.KeyCode.X,C=Enum.KeyCode.C,E=Enum.KeyCode.E,G=Enum.KeyCode.G}
 _G.farmSpeed = 10
 _G.attackRange = 15
+local targetZombieName = "" -- ชื่อซอมบี้เป้าหมายเฉพาะ
 
 -- =================== Functions ===================
 local function makeToggle(name)
@@ -84,6 +110,11 @@ local function makeToggle(name)
         toggles[name] = not toggles[name]
         b.Text = name..(toggles[name] and ": ON" or ": OFF")
         b.BackgroundColor3 = toggles[name] and Color3.fromRGB(0,170,0) or Color3.fromRGB(50,50,50)
+        showNotification(name.." "..(toggles[name] and "Enabled" or "Disabled"))
+        local sound = Instance.new("Sound", gui)
+        sound.SoundId = "rbxassetid://9118822386"
+        sound:Play()
+        game.Debris:AddItem(sound,1)
     end)
 end
 
@@ -138,6 +169,7 @@ local function nearestZombie()
     if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
     for _,z in pairs(workspace:GetChildren()) do
         if z:FindFirstChild("Humanoid") and z:FindFirstChild("HumanoidRootPart") and z.Humanoid.Health>0 then
+            if targetZombieName~="" and z.Name ~= targetZombieName then continue end
             local d = (z.HumanoidRootPart.Position-char.HumanoidRootPart.Position).Magnitude
             if d < dist then nearest, dist = z, d end
         end
@@ -155,56 +187,47 @@ local function highlight(z)
     end
 end
 
--- =================== Skill System ===================
-UserInputService.InputBegan:Connect(function(input,gpe)
-    if not gpe then
-        local hum = char:FindFirstChild("Humanoid")
-        local z
-        local nearestDist = math.huge
-        for _,m in pairs(workspace:GetChildren()) do
-            if m:FindFirstChild("Humanoid") and m:FindFirstChild("HumanoidRootPart") then
-                local d = (m.HumanoidRootPart.Position-char.HumanoidRootPart.Position).Magnitude
-                if d < nearestDist then nearestDist = d; z = m end
-            end
-        end
+-- =================== Auto Skill Combo ===================
+local skillSequence = {"Z","X","C","E","G"}
+local skillIndex = 1
+local skillCooldown = 0.5
 
-        if input.KeyCode == keybinds.Z then
-            char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame*CFrame.new(0,0,-10)
-        elseif input.KeyCode == keybinds.X then
-            for _,m in pairs(workspace:GetChildren()) do
-                if m:FindFirstChild("Humanoid") and (m.HumanoidRootPart.Position-char.HumanoidRootPart.Position).Magnitude<20 then
-                    m.Humanoid:TakeDamage(25)
-                end
-            end
-        elseif input.KeyCode == keybinds.C then
-            if hum then hum.Health = math.min(hum.MaxHealth,hum.Health+50) end
-        elseif input.KeyCode == keybinds.E and z then
-            z.Humanoid:TakeDamage(40)
-        elseif input.KeyCode == keybinds.G and z then
-            char:MoveTo(z.HumanoidRootPart.Position + Vector3.new(0,3,0))
-        end
+local function useNextSkill(target)
+    local key = skillSequence[skillIndex]
+    if key then
+        local kc = Enum.KeyCode[key]
+        UserInputService.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard,KeyCode=kc},false)
+        skillIndex = skillIndex + 1
+        if skillIndex > #skillSequence then skillIndex = 1 end
     end
-end)
+end
 
 -- =================== Main Loop ===================
-RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function(delta)
     updateChar()
     local z = nearestZombie()
+    if toggles["Auto Farm"] and z and char:FindFirstChild("HumanoidRootPart") then
+        local currentPos = char.HumanoidRootPart.Position
+        local targetPos = z.HumanoidRootPart.Position + Vector3.new(0,1,0)
+        local lerpPos = currentPos:Lerp(targetPos, math.clamp(0.1*_G.farmSpeed/10,0,1))
+        char:MoveTo(lerpPos)
 
-    -- Auto Farm
-    if toggles["Auto Farm"] and z then
-        local speed = _G.farmSpeed or 10
-        char:MoveTo(z.HumanoidRootPart.Position + Vector3.new(0,3,0))
+        -- Auto Skill Combo
+        useNextSkill(z)
+
+        -- Tool
         local tool = char:FindFirstChildOfClass("Tool")
         if tool then tool:Activate() end
 
+        -- Gun
         local gun = char:FindFirstChild("Gun")
         if gun and gun:FindFirstChild("Shoot") then
             pcall(function() gun.Shoot:FireServer(z.HumanoidRootPart.Position) end)
         end
+
+        showNotification("Auto Farm active",0.5)
     end
 
-    -- Auto Buy
     if toggles["Auto Buy"] then
         local shop = workspace:FindFirstChild("Shop")
         if shop then
@@ -212,17 +235,16 @@ RunService.RenderStepped:Connect(function()
                 if item:IsA("Tool") then
                     local clone = item:Clone()
                     clone.Parent = player.Backpack
+                    showNotification("Bought "..item.Name,1)
                 end
             end
         end
     end
 
-    -- God Mode
     if toggles["God Mode"] and char:FindFirstChild("Humanoid") then
         char.Humanoid.Health = char.Humanoid.MaxHealth
     end
 
-    -- ESP
     if toggles["ESP"] then
         for _,m in pairs(workspace:GetChildren()) do
             if m:FindFirstChild("Humanoid") then highlight(m) end
