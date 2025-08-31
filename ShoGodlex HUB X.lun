@@ -9,33 +9,20 @@ local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local humanoid = char:WaitForChild("Humanoid")
 
---// Settings (ใช้ ModuleScript / LocalStorage แทน DataStore)
-local Settings = {}
-local SettingsFile = "HuntyZombieSettings"
+--// Settings
+local Settings = {
+    Godmode = true,
+    AntiAFK = true,
+    AutoFight = true,
+    AttackDelay = 0.5
+}
 
--- โหลดค่าที่บันทึกไว้
-pcall(function()
-    local saved = player:WaitForChild("PlayerGui"):FindFirstChild(SettingsFile)
-    if saved then
-        Settings = require(saved)
-    else
-        Settings = {Godmode=true, AntiAFK=true, AutoFight=true, AttackDelay=0.5}
-    end
-end)
-
--- ฟังก์ชันบันทึกค่า
-local function saveSettings()
-    local module = Instance.new("ModuleScript")
-    module.Name = SettingsFile
-    module.Source = "return "..game:GetService("HttpService"):JSONEncode(Settings)
-    module.Parent = player:WaitForChild("PlayerGui")
-end
-
---// RemoteEvents (ตรวจสอบชื่อจริงในเกม)
+--// RemoteEvents
 local attackEvent = rs:FindFirstChild("AttackEvent")
 
 --// UI
-local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame", ScreenGui)
@@ -44,6 +31,8 @@ Frame.Position = UDim2.new(0.8,0,0.1,0)
 Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 Frame.BackgroundTransparency = 0.3
 Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true -- ทำให้ลากได้
 
 local function createToggleButton(name, yPos, key)
     local btn = Instance.new("TextButton", Frame)
@@ -55,7 +44,6 @@ local function createToggleButton(name, yPos, key)
     btn.MouseButton1Click:Connect(function()
         Settings[key] = not Settings[key]
         btn.Text = name.." : "..(Settings[key] and "ON" or "OFF")
-        saveSettings()
     end)
 end
 
