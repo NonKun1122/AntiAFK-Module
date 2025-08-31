@@ -1,128 +1,130 @@
+--// Variables
 local player = game.Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local workspace = game:GetService("Workspace")
+local runService = game:GetService("RunService")
 
---====================== UI ======================
-local playerGui = player:WaitForChild("PlayerGui")
-if playerGui:FindFirstChild("WarpAttackUI") then playerGui.WarpAttackUI:Destroy() end
+--// Settings
+local attackDelay = 0.5
+local autoFarm = true
+local difficulty = "Normal"
+local mapName = "DefaultMap"
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "WarpAttackUI"
-gui.ResetOnSpawn = false
-gui.Parent = playerGui
+--// UI
+local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 200, 0, 150)
+Frame.Position = UDim2.new(0.8,0,0.1,0)
+Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Frame.BackgroundTransparency = 0.3
+Frame.BorderSizePixel = 0
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0,300,0,200)
-frame.Position = UDim2.new(0.05,0,0.15,0)
-frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
-frame.Active = true
-frame.Draggable = true
-frame.Parent = gui
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1,0,0,30)
-title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(255,255,255)
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 20
-title.Text = "Auto Warp Attack"
-title.Parent = frame
-
--- Toggle Auto Warp
-local toggles = {}
-local function makeToggle(name)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(1,0,0,35)
-    b.Position = UDim2.new(0,0,0,40 + (#frame:GetChildren()-2)*40)
-    b.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    b.TextColor3 = Color3.fromRGB(255,255,255)
-    b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 18
-    b.Text = name..": OFF"
-    b.Parent = frame
-
-    toggles[name] = false
-    b.MouseButton1Click:Connect(function()
-        toggles[name] = not toggles[name]
-        b.Text = name..(toggles[name] and ": ON" or ": OFF")
-        b.BackgroundColor3 = toggles[name] and Color3.fromRGB(0,170,0) or Color3.fromRGB(50,50,50)
-    end)
+local function createButton(name, posY, callback)
+    local btn = Instance.new("TextButton", Frame)
+    btn.Size = UDim2.new(0, 180, 0, 30)
+    btn.Position = UDim2.new(0, 10, 0, posY)
+    btn.Text = name
+    btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.MouseButton1Click:Connect(callback)
 end
 
-makeToggle("Auto Warp Attack")
+createButton("Start AutoFarm", 10, function() autoFarm = true end)
+createButton("Stop AutoFarm", 50, function() autoFarm = false end)
+createButton("Set Easy", 90, function() difficulty = "Easy" end)
+createButton("Set Hard", 130, function() difficulty = "Hard" end)
 
--- Skill Buttons
-local skillSequence = {"Z","X","C","E","G"}
-local skillIndex = 1
-local skillCooldown = 0.3
-local lastSkill = tick()
-
-local skillFrame = Instance.new("Frame")
-skillFrame.Size = UDim2.new(1,0,0,50)
-skillFrame.Position = UDim2.new(0,0,0,140)
-skillFrame.BackgroundColor3 = Color3.fromRGB(50,50,50)
-skillFrame.Parent = frame
-
-for i,k in pairs(skillSequence) do
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0,50,1,0)
-    b.Position = UDim2.new((i-1)*0.18,0,0,0)
-    b.BackgroundColor3 = Color3.fromRGB(70,70,70)
-    b.TextColor3 = Color3.fromRGB(255,255,255)
-    b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 18
-    b.Text = k
-    b.Parent = skillFrame
-
-    b.MouseButton1Click:Connect(function()
-        UserInputService.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard,KeyCode=Enum.KeyCode[k]},false)
-    end)
-end
-
---====================== Helper Functions ======================
-local function nearestZombie()
-    local nearest,dist = nil, math.huge
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-    for _,z in pairs(workspace:GetChildren()) do
-        if z:FindFirstChild("Humanoid") and z:FindFirstChild("HumanoidRootPart") and z.Humanoid.Health>0 then
-            local d = (z.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
-            if d < dist then nearest,dist = z,d end
-        end
-    end
-    return nearest
-end
-
-local function useNextSkill()
-    if tick() - lastSkill >= skillCooldown then
-        local key = skillSequence[skillIndex]
-        if key then
-            UserInputService.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard, KeyCode=Enum.KeyCode[key]}, false)
-            skillIndex = skillIndex + 1
-            if skillIndex > #skillSequence then skillIndex = 1 end
-            lastSkill = tick()
-        end
+--// Functions
+local function selectMap(name)
+    local mapEvent = replicatedStorage:FindFirstChild("SelectMapEvent")
+    if mapEvent then
+        mapEvent:FireServer(name)
+        mapName = name
     end
 end
 
---====================== Main Loop ======================
-RunService.RenderStepped:Connect(function()
-    if toggles["Auto Warp Attack"] and char and char:FindFirstChild("HumanoidRootPart") then
-        local z = nearestZombie()
-        if z then
-            -- Warp to zombie
-            char.HumanoidRootPart.CFrame = z.HumanoidRootPart.CFrame + Vector3.new(0,1,0)
-            -- Skill combo
-            useNextSkill()
-            -- Tool
-            local tool = char:FindFirstChildOfClass("Tool")
-            if tool then tool:Activate() end
-            -- Gun
-            local gun = char:FindFirstChild("Gun")
-            if gun and gun:FindFirstChild("Shoot") then
-                pcall(function() gun.Shoot:FireServer(z.HumanoidRootPart.Position) end)
+local function setDifficulty(level)
+    local diffEvent = replicatedStorage:FindFirstChild("SetDifficultyEvent")
+    if diffEvent then
+        diffEvent:FireServer(level)
+        difficulty = level
+    end
+end
+
+local function getClosestZombie()
+    local closest = nil
+    local shortestDistance = math.huge
+    local zombiesFolder = workspace:FindFirstChild("Zombies")
+    if not zombiesFolder then return nil end
+
+    for _, zombie in pairs(zombiesFolder:GetChildren()) do
+        if zombie:FindFirstChild("Humanoid") and zombie.Humanoid.Health > 0 then
+            local distance = (zombie.HumanoidRootPart.Position - hrp.Position).Magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                closest = zombie
             end
+        end
+    end
+    return closest
+end
+
+local function attackZombie(zombie)
+    if not zombie or not zombie:FindFirstChild("HumanoidRootPart") then return end
+    hrp.CFrame = zombie.HumanoidRootPart.CFrame + Vector3.new(0,0,3)
+    local attackEvent = replicatedStorage:FindFirstChild("AttackEvent")
+    while zombie.Humanoid.Health > 0 do
+        if attackEvent then attackEvent:FireServer() end
+        wait(attackDelay)
+    end
+end
+
+local function autoRespawn()
+    if character.Humanoid.Health <= 0 then
+        player:LoadCharacter()
+        character = player.Character or player.CharacterAdded:Wait()
+        hrp = character:WaitForChild("HumanoidRootPart")
+    end
+end
+
+local function checkWin()
+    local winStatus = workspace:FindFirstChild("GameStatus") and workspace.GameStatus:FindFirstChild("Win")
+    if winStatus and winStatus.Value == true then
+        return true
+    end
+    return false
+end
+
+local function autoRematch()
+    local rematchEvent = replicatedStorage:FindFirstChild("RematchEvent")
+    if rematchEvent then
+        rematchEvent:FireServer()
+    else
+        player:LoadCharacter()
+    end
+end
+
+--// Main Loop
+spawn(function()
+    while true do
+        if autoFarm then
+            autoRespawn()
+            if checkWin() then
+                print("ชนะแล้ว! เริ่มรอบใหม่...")
+                autoRematch()
+                wait(3)
+            else
+                local zombie = getClosestZombie()
+                if zombie then
+                    attackZombie(zombie)
+                else
+                    wait(1)
+                end
+            end
+        else
+            wait(1)
         end
     end
 end)
