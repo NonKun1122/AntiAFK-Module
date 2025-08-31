@@ -1,32 +1,20 @@
---====================== Setup ======================
 local player = game.Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
-
--- Anti AFK
-player.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
-end)
-
--- Character update
-local function updateChar() char = player.Character or player.CharacterAdded:Wait() end
-player.CharacterAdded:Connect(updateChar)
 
 --====================== UI ======================
 local playerGui = player:WaitForChild("PlayerGui")
-if playerGui:FindFirstChild("ZombieHub3") then playerGui.ZombieHub3:Destroy() end
+if playerGui:FindFirstChild("WarpAttackUI") then playerGui.WarpAttackUI:Destroy() end
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "ZombieHub3"
+gui.Name = "WarpAttackUI"
 gui.ResetOnSpawn = false
 gui.Parent = playerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0,500,0,650)
+frame.Size = UDim2.new(0,300,0,200)
 frame.Position = UDim2.new(0.05,0,0.15,0)
 frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
 frame.Active = true
@@ -39,55 +27,15 @@ title.BackgroundTransparency = 1
 title.TextColor3 = Color3.fromRGB(255,255,255)
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 20
-title.Text = "Hunty Zombie Hub 3.1"
+title.Text = "Auto Warp Attack"
 title.Parent = frame
 
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0,6)
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Parent = frame
-
--- Notification
-local notifFrame = Instance.new("Frame")
-notifFrame.Size = UDim2.new(0,250,0,30)
-notifFrame.Position = UDim2.new(0.5,-125,0.05,0)
-notifFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-notifFrame.AnchorPoint = Vector2.new(0.5,0)
-notifFrame.Parent = gui
-notifFrame.Visible = false
-
-local notifLabel = Instance.new("TextLabel")
-notifLabel.Size = UDim2.new(1,0,1,0)
-notifLabel.BackgroundTransparency = 1
-notifLabel.TextColor3 = Color3.fromRGB(255,255,255)
-notifLabel.Font = Enum.Font.SourceSansBold
-notifLabel.TextSize = 16
-notifLabel.Text = ""
-notifLabel.Parent = notifFrame
-
-local function showNotification(msg,duration)
-    notifLabel.Text = msg
-    notifFrame.Visible = true
-    local tween = TweenService:Create(notifFrame, TweenInfo.new(0.3), {BackgroundTransparency=0})
-    tween:Play()
-    task.delay(duration or 2,function()
-        local tweenOut = TweenService:Create(notifFrame, TweenInfo.new(0.3), {BackgroundTransparency=1})
-        tweenOut:Play()
-        tweenOut.Completed:Wait()
-        notifFrame.Visible=false
-    end)
-end
-
---====================== Toggles ======================
+-- Toggle Auto Warp
 local toggles = {}
-local skillSequence = {"Z","X","C","E","G"}
-local skillIndex = 1
-local skillCooldown = 0.3
-local lastSkill = tick()
-
 local function makeToggle(name)
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(1,0,0,35)
+    b.Position = UDim2.new(0,0,0,40 + (#frame:GetChildren()-2)*40)
     b.BackgroundColor3 = Color3.fromRGB(50,50,50)
     b.TextColor3 = Color3.fromRGB(255,255,255)
     b.Font = Enum.Font.SourceSansBold
@@ -100,74 +48,27 @@ local function makeToggle(name)
         toggles[name] = not toggles[name]
         b.Text = name..(toggles[name] and ": ON" or ": OFF")
         b.BackgroundColor3 = toggles[name] and Color3.fromRGB(0,170,0) or Color3.fromRGB(50,50,50)
-        showNotification(name.." "..(toggles[name] and "Enabled" or "Disabled"))
     end)
 end
 
-makeToggle("Auto Farm")
-makeToggle("God Mode")
-makeToggle("Auto Collect")
-makeToggle("Auto Buy")
-makeToggle("ESP")
-makeToggle("Auto Restart")
+makeToggle("Auto Warp Attack")
 
---====================== Sliders ======================
-local sliders = {}
-_G.attackRange = 15
-_G.collectRange = 15
-_G.farmSpeed = 10
+-- Skill Buttons
+local skillSequence = {"Z","X","C","E","G"}
+local skillIndex = 1
+local skillCooldown = 0.3
+local lastSkill = tick()
 
-local function makeSlider(name,min,max,default,callback)
-    local frameSlider = Instance.new("Frame")
-    frameSlider.Size = UDim2.new(1,0,0,50)
-    frameSlider.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    frameSlider.Parent = frame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1,0,0,20)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(255,255,255)
-    label.Font = Enum.Font.SourceSans
-    label.TextSize = 16
-    label.Text = name.." "..default
-    label.Parent = frameSlider
-
-    local slider = Instance.new("TextButton")
-    slider.Size = UDim2.new(1,0,0,20)
-    slider.Position = UDim2.new(0,0,0,25)
-    slider.BackgroundColor3 = Color3.fromRGB(70,70,70)
-    slider.Text = ""
-    slider.Parent = frameSlider
-
-    slider.MouseButton1Down:Connect(function()
-        local conn
-        conn = UserInputService.InputChanged:Connect(function(input)
-            if input.UserInputType==Enum.UserInputType.MouseMovement then
-                local ratio = math.clamp((input.Position.X-slider.AbsolutePosition.X)/slider.AbsoluteSize.X,0,1)
-                local value = math.floor(min + (max-min)*ratio)
-                label.Text = name.." "..value
-                callback(value)
-            end
-        end)
-        UserInputService.InputEnded:Wait()
-        conn:Disconnect()
-    end)
-end
-
-makeSlider("Attack Range",1,50,15,function(v) _G.attackRange=v end)
-makeSlider("Collect Range",1,50,15,function(v) _G.collectRange=v end)
-makeSlider("Farm Speed",5,50,10,function(v) _G.farmSpeed=v end)
-
---====================== Skill Buttons ======================
 local skillFrame = Instance.new("Frame")
 skillFrame.Size = UDim2.new(1,0,0,50)
+skillFrame.Position = UDim2.new(0,0,0,140)
 skillFrame.BackgroundColor3 = Color3.fromRGB(50,50,50)
 skillFrame.Parent = frame
 
-for _,k in pairs(skillSequence) do
+for i,k in pairs(skillSequence) do
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0,60,1,0)
-    b.Position = UDim2.new((#skillFrame:GetChildren()-1)*0.15,0,0,0)
+    b.Size = UDim2.new(0,50,1,0)
+    b.Position = UDim2.new((i-1)*0.18,0,0,0)
     b.BackgroundColor3 = Color3.fromRGB(70,70,70)
     b.TextColor3 = Color3.fromRGB(255,255,255)
     b.Font = Enum.Font.SourceSansBold
@@ -176,9 +77,7 @@ for _,k in pairs(skillSequence) do
     b.Parent = skillFrame
 
     b.MouseButton1Click:Connect(function()
-        local kc = Enum.KeyCode[k]
-        UserInputService.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard,KeyCode=kc},false)
-        showNotification("Skill "..k.." used")
+        UserInputService.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard,KeyCode=Enum.KeyCode[k]},false)
     end)
 end
 
@@ -188,106 +87,41 @@ local function nearestZombie()
     if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
     for _,z in pairs(workspace:GetChildren()) do
         if z:FindFirstChild("Humanoid") and z:FindFirstChild("HumanoidRootPart") and z.Humanoid.Health>0 then
-            local d = (z.HumanoidRootPart.Position-char.HumanoidRootPart.Position).Magnitude
-            if d<_G.attackRange and d<dist then nearest,dist = z,d end
+            local d = (z.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
+            if d < dist then nearest,dist = z,d end
         end
     end
     return nearest
 end
 
-local function useNextSkill(target)
-    if tick()-lastSkill>=skillCooldown then
+local function useNextSkill()
+    if tick() - lastSkill >= skillCooldown then
         local key = skillSequence[skillIndex]
         if key then
-            UserInputService.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard,KeyCode=Enum.KeyCode[key]},false)
-            skillIndex = skillIndex+1
-            if skillIndex>#skillSequence then skillIndex=1 end
-            lastSkill=tick()
+            UserInputService.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard, KeyCode=Enum.KeyCode[key]}, false)
+            skillIndex = skillIndex + 1
+            if skillIndex > #skillSequence then skillIndex = 1 end
+            lastSkill = tick()
         end
-    end
-end
-
-local function collectNearbyItems()
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    local root = char.HumanoidRootPart
-    for _, item in pairs(workspace:GetChildren()) do
-        if item:IsA("Part") and (item.Name=="Coin" or item.Name=="HealthPack") then
-            local distance = (item.Position-root.Position).Magnitude
-            if distance<=_G.collectRange then
-                char.Humanoid:MoveTo(item.Position + Vector3.new(0,1,0))
-                if item:FindFirstChild("TouchInterest") then
-                    firetouchinterest(root,item,0)
-                    firetouchinterest(root,item,1)
-                end
-            end
-        end
-    end
-end
-
-local function highlight(z)
-    if not z:FindFirstChild("Highlight") then
-        local hl = Instance.new("Highlight")
-        hl.FillColor = Color3.fromRGB(255,0,0)
-        hl.OutlineColor = Color3.fromRGB(255,255,255)
-        hl.Adornee = z
-        hl.Parent = z
     end
 end
 
 --====================== Main Loop ======================
 RunService.RenderStepped:Connect(function()
-    updateChar()
-
-    -- Auto Farm
-    if toggles["Auto Farm"] then
+    if toggles["Auto Warp Attack"] and char and char:FindFirstChild("HumanoidRootPart") then
         local z = nearestZombie()
-        if z and char:FindFirstChild("HumanoidRootPart") then
-            char.Humanoid:MoveTo(z.HumanoidRootPart.Position + Vector3.new(0,1,0))
-            useNextSkill(z)
+        if z then
+            -- Warp to zombie
+            char.HumanoidRootPart.CFrame = z.HumanoidRootPart.CFrame + Vector3.new(0,1,0)
+            -- Skill combo
+            useNextSkill()
+            -- Tool
             local tool = char:FindFirstChildOfClass("Tool")
             if tool then tool:Activate() end
+            -- Gun
             local gun = char:FindFirstChild("Gun")
             if gun and gun:FindFirstChild("Shoot") then
                 pcall(function() gun.Shoot:FireServer(z.HumanoidRootPart.Position) end)
-            end
-        end
-    end
-
-    -- God Mode
-    if toggles["God Mode"] and char:FindFirstChild("Humanoid") then
-        char.Humanoid.Health = char.Humanoid.MaxHealth
-    end
-
-    -- Auto Collect
-    if toggles["Auto Collect"] then collectNearbyItems() end
-
-    -- ESP
-    if toggles["ESP"] then
-        for _,m in pairs(workspace:GetChildren()) do
-            if m:FindFirstChild("Humanoid") then highlight(m) end
-        end
-    end
-
-    -- Auto Buy (ตัวอย่าง)
-    if toggles["Auto Buy"] then
-        local shop = workspace:FindFirstChild("Shop")
-        if shop then
-            for _,item in pairs(shop:GetChildren()) do
-                if item:IsA("Tool") then
-                    local clone = item:Clone()
-                    clone.Parent = player.Backpack
-                end
-            end
-        end
-    end
-
-    -- Auto Restart หลังจบเกม (ตัวอย่าง)
-    if toggles["Auto Restart"] then
-        if workspace:FindFirstChild("GameEnd") then
-            local startButton = workspace.GameEnd:FindFirstChild("StartButton")
-            if startButton then
-                fireclickdetector(startButton.ClickDetector)
-                showNotification("Game restarted",2)
             end
         end
     end
