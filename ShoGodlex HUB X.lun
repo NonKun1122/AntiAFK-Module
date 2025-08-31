@@ -1,7 +1,7 @@
 --// Services
 local player = game.Players.LocalPlayer
-local rs = game:GetService("ReplicatedStorage")
 local ws = game:GetService("Workspace")
+local rs = game:GetService("ReplicatedStorage")
 local runService = game:GetService("RunService")
 
 --// Player Variables
@@ -9,47 +9,59 @@ local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local humanoid = char:WaitForChild("Humanoid")
 
---// Settings (บันทึกค่าไว้รอบถัดไป)
-local Settings = {
-    AutoFarm = true,
-    AutoRematch = true,
-    AntiAFK = true,
-    Godmode = true,
-    AttackDelay = 0.5
-}
+--// Settings (ใช้ ModuleScript / LocalStorage แทน DataStore)
+local Settings = {}
+local SettingsFile = "HuntyZombieSettings"
+
+-- โหลดค่าที่บันทึกไว้
+pcall(function()
+    local saved = player:WaitForChild("PlayerGui"):FindFirstChild(SettingsFile)
+    if saved then
+        Settings = require(saved)
+    else
+        Settings = {Godmode=true, AntiAFK=true, AutoFight=true, AttackDelay=0.5}
+    end
+end)
+
+-- ฟังก์ชันบันทึกค่า
+local function saveSettings()
+    local module = Instance.new("ModuleScript")
+    module.Name = SettingsFile
+    module.Source = "return "..game:GetService("HttpService"):JSONEncode(Settings)
+    module.Parent = player:WaitForChild("PlayerGui")
+end
 
 --// RemoteEvents (ตรวจสอบชื่อจริงในเกม)
 local attackEvent = rs:FindFirstChild("AttackEvent")
-local rematchEvent = rs:FindFirstChild("RematchEvent")
 
 --// UI
 local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 220, 0, 180)
+Frame.Size = UDim2.new(0, 220, 0, 150)
 Frame.Position = UDim2.new(0.8,0,0.1,0)
 Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 Frame.BackgroundTransparency = 0.3
 Frame.BorderSizePixel = 0
 
-local function createToggleButton(name, yPos, settingKey)
+local function createToggleButton(name, yPos, key)
     local btn = Instance.new("TextButton", Frame)
     btn.Size = UDim2.new(0, 200, 0, 35)
     btn.Position = UDim2.new(0, 10, 0, yPos)
     btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
     btn.TextColor3 = Color3.new(1,1,1)
-    btn.Text = name.." : "..(Settings[settingKey] and "ON" or "OFF")
+    btn.Text = name.." : "..(Settings[key] and "ON" or "OFF")
     btn.MouseButton1Click:Connect(function()
-        Settings[settingKey] = not Settings[settingKey]
-        btn.Text = name.." : "..(Settings[settingKey] and "ON" or "OFF")
+        Settings[key] = not Settings[key]
+        btn.Text = name.." : "..(Settings[key] and "ON" or "OFF")
+        saveSettings()
     end)
 end
 
-createToggleButton("Auto-Farm", 10, "AutoFarm")
-createToggleButton("Auto-Rematch", 55, "AutoRematch")
-createToggleButton("Anti-AFK", 100, "AntiAFK")
-createToggleButton("Godmode", 145, "Godmode")
+createToggleButton("Godmode", 10, "Godmode")
+createToggleButton("Anti-AFK", 55, "AntiAFK")
+createToggleButton("Auto-Fight", 100, "AutoFight")
 
 --// Anti-AFK
 spawn(function()
@@ -97,35 +109,17 @@ local function attackZombie(zombie)
     end
 end
 
---// Auto-Rematch
-local function checkWinAndRematch()
-    local win = ws:FindFirstChild("GameStatus") and ws.GameStatus:FindFirstChild("Win")
-    if win and win.Value then
-        if Settings.AutoRematch and rematchEvent then
-            rematchEvent:FireServer()
-        else
-            player:LoadCharacter()
-        end
-        wait(3)
-    end
-end
-
---// Auto-Respawn
-local function autoRespawn()
-    if humanoid.Health <= 0 then
-        player:LoadCharacter()
-        char = player.Character or player.CharacterAdded:Wait()
-        hrp = char:WaitForChild("HumanoidRootPart")
-        humanoid = char:WaitForChild("Humanoid")
-    end
-end
-
---// Main Loop ฟาร์ม 24/7
+--// Auto-Fight Loop
 spawn(function()
     while true do
-        if Settings.AutoFarm then
-            autoRespawn()
-            checkWinAndRematch()
+        if Settings.AutoFight then
+            if humanoid.Health <= 0 then
+                player:LoadCharacter()
+                char = player.Character or player.CharacterAdded:Wait()
+                hrp = char:WaitForChild("HumanoidRootPart")
+                humanoid = char:WaitForChild("Humanoid")
+            end
+
             local zombie = getClosestZombie()
             if zombie then
                 attackZombie(zombie)
