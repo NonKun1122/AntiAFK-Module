@@ -1,5 +1,5 @@
 -- Modern Script Hub UI
--- LocalScript
+-- LocalScript (วางใน StarterPlayerScripts หรือ StarterGui)
 
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
@@ -10,13 +10,13 @@ local player = Players.LocalPlayer
 local antiAFKEnabled = false
 local elapsedTime = 0
 
--- GUI
+-- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ModernHubUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
--- ปุ่มเปิด/ปิด UI
+-- Toggle UI Button
 local ToggleUIBtn = Instance.new("ImageButton")
 ToggleUIBtn.Size = UDim2.new(0, 40, 0, 40)
 ToggleUIBtn.Position = UDim2.new(1, -50, 0, 10)
@@ -26,10 +26,11 @@ ToggleUIBtn.ImageRectSize = Vector2.new(36, 36)
 ToggleUIBtn.BackgroundTransparency = 1
 ToggleUIBtn.Parent = ScreenGui
 
--- หน้าต่างหลัก
+-- Main Frame (Responsive)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 500, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
+MainFrame.Size = UDim2.new(0.8, 0, 0.6, 0)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.BackgroundTransparency = 0.5
 MainFrame.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
 MainFrame.ClipsDescendants = true
@@ -92,7 +93,7 @@ Version.Parent = Header
 
 -- Sidebar
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 120, 1, -60)
+Sidebar.Size = UDim2.new(0, 0.2 * MainFrame.AbsoluteSize.X, 1, -60)
 Sidebar.Position = UDim2.new(0, 0, 0, 60)
 Sidebar.BackgroundTransparency = 0.3
 Sidebar.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
@@ -109,7 +110,7 @@ Content.Position = UDim2.new(0, 130, 0, 70)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
--- ฟังก์ชันจัดการปุ่ม Active + Hover
+-- ฟังก์ชัน Hover Effect
 local function addHoverEffect(button)
     button.MouseEnter:Connect(function()
         if button.BackgroundColor3 ~= Color3.fromRGB(0,200,255) then
@@ -123,6 +124,29 @@ local function addHoverEffect(button)
     end)
 end
 
+-- สร้างปุ่ม Sidebar
+local function createButton(name, posY)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -20, 0, 40)
+    btn.Position = UDim2.new(0, 10, 0, posY)
+    btn.Text = name
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.BackgroundColor3 = Color3.fromRGB(0,140,255)
+    btn.Parent = Sidebar
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,8)
+    corner.Parent = btn
+    addHoverEffect(btn)
+    return btn
+end
+
+local AntiAFKBtn = createButton("Anti-AFK", 10)
+local PlayerInfoBtn = createButton("Player Info", 60)
+local UpdatesBtn = createButton("Updates", 110)
+
+-- ฟังก์ชันจัดการปุ่ม Active
 local function resetButtonColors()
     AntiAFKBtn.BackgroundColor3 = Color3.fromRGB(0,140,255)
     PlayerInfoBtn.BackgroundColor3 = Color3.fromRGB(0,140,255)
@@ -131,51 +155,8 @@ end
 
 local function selectButton(btn)
     resetButtonColors()
-    btn.BackgroundColor3 = Color3.fromRGB(0,200,255) -- Active
+    btn.BackgroundColor3 = Color3.fromRGB(0,200,255)
 end
-
--- ปุ่ม Sidebar
-local AntiAFKBtn = Instance.new("TextButton")
-AntiAFKBtn.Size = UDim2.new(1, -20, 0, 40)
-AntiAFKBtn.Position = UDim2.new(0, 10, 0, 10)
-AntiAFKBtn.Text = "Anti-AFK"
-AntiAFKBtn.Font = Enum.Font.GothamBold
-AntiAFKBtn.TextSize = 16
-AntiAFKBtn.TextColor3 = Color3.new(1,1,1)
-AntiAFKBtn.BackgroundColor3 = Color3.fromRGB(0,140,255)
-AntiAFKBtn.Parent = Sidebar
-local UICornerBtn = Instance.new("UICorner")
-UICornerBtn.CornerRadius = UDim.new(0,8)
-UICornerBtn.Parent = AntiAFKBtn
-addHoverEffect(AntiAFKBtn)
-
-local PlayerInfoBtn = Instance.new("TextButton")
-PlayerInfoBtn.Size = UDim2.new(1, -20, 0, 40)
-PlayerInfoBtn.Position = UDim2.new(0, 10, 0, 60)
-PlayerInfoBtn.Text = "Player Info"
-PlayerInfoBtn.Font = Enum.Font.GothamBold
-PlayerInfoBtn.TextSize = 16
-PlayerInfoBtn.TextColor3 = Color3.new(1,1,1)
-PlayerInfoBtn.BackgroundColor3 = Color3.fromRGB(0,140,255)
-PlayerInfoBtn.Parent = Sidebar
-local UICornerPlayer = Instance.new("UICorner")
-UICornerPlayer.CornerRadius = UDim.new(0,8)
-UICornerPlayer.Parent = PlayerInfoBtn
-addHoverEffect(PlayerInfoBtn)
-
-local UpdatesBtn = Instance.new("TextButton")
-UpdatesBtn.Size = UDim2.new(1, -20, 0, 40)
-UpdatesBtn.Position = UDim2.new(0, 10, 0, 110)
-UpdatesBtn.Text = "Updates"
-UpdatesBtn.Font = Enum.Font.GothamBold
-UpdatesBtn.TextSize = 16
-UpdatesBtn.TextColor3 = Color3.new(1,1,1)
-UpdatesBtn.BackgroundColor3 = Color3.fromRGB(0,140,255)
-UpdatesBtn.Parent = Sidebar
-local UICornerUpdates = Instance.new("UICorner")
-UICornerUpdates.CornerRadius = UDim.new(0,8)
-UICornerUpdates.Parent = UpdatesBtn
-addHoverEffect(UpdatesBtn)
 
 -- Timer Anti-AFK
 local TimerLabel = Instance.new("TextLabel")
@@ -188,7 +169,7 @@ TimerLabel.TextColor3 = Color3.new(1,1,1)
 TimerLabel.BackgroundTransparency = 1
 TimerLabel.Parent = Content
 
--- ฟังก์ชัน Anti-AFK
+-- Anti-AFK Function
 local function toggleAntiAFK()
     antiAFKEnabled = not antiAFKEnabled
     if antiAFKEnabled then
@@ -291,9 +272,9 @@ local function toggleUI()
     uiOpen = not uiOpen
     local goal = {}
     if uiOpen then
-        goal.Position = UDim2.new(0.5, -250, 0.5, -150)
+        goal.Position = UDim2.new(0.5, 0, 0.5, 0)
     else
-        goal.Position = UDim2.new(0.5, -250, 1.5, 0)
+        goal.Position = UDim2.new(0.5, 0, 1.5, 0)
     end
     TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), goal):Play()
 end
