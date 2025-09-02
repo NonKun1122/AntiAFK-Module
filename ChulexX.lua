@@ -14,6 +14,8 @@ local AntiAFKEnabled = false
 local GodModeEnabled = false
 local startTime = tick()
 local uiVisible = true
+local dragging = false
+local dragInput, dragStart, startPos
 
 -- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -30,6 +32,42 @@ MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner", MainFrame)
 UICorner.CornerRadius = UDim.new(0,12)
+
+-- Draggable
+local function drag(frame)
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+drag(MainFrame)
 
 -- Title
 local Title = Instance.new("TextLabel")
@@ -52,36 +90,38 @@ Version.Size = UDim2.new(1,0,0,20)
 Version.Position = UDim2.new(0,0,0,40)
 Version.Parent = MainFrame
 
--- Header Tabs
-local HeaderFrame = Instance.new("Frame")
-HeaderFrame.Size = UDim2.new(1,0,0,30)
-HeaderFrame.Position = UDim2.new(0,0,0,70)
-HeaderFrame.BackgroundTransparency = 1
-HeaderFrame.Parent = MainFrame
+-- Sidebar Tabs (แนวตั้ง)
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.new(0,120,1,-60)
+Sidebar.Position = UDim2.new(0,10,0,70)
+Sidebar.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Sidebar.Parent = MainFrame
+local UICornerSide = Instance.new("UICorner", Sidebar)
+UICornerSide.CornerRadius = UDim.new(0,10)
 
-local function createTab(name, positionX)
-    local tab = Instance.new("TextButton")
-    tab.Text = name
-    tab.Font = Enum.Font.GothamBold
-    tab.TextSize = 16
-    tab.TextColor3 = Color3.fromRGB(255,255,255)
-    tab.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    tab.Size = UDim2.new(0,150,1,0)
-    tab.Position = UDim2.new(0,positionX,0,0)
-    tab.Parent = HeaderFrame
-    local corner = Instance.new("UICorner", tab)
-    corner.CornerRadius = UDim.new(0,8)
-    return tab
+local function createTab(name, posY)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1,-10,0,40)
+    btn.Position = UDim2.new(0,5,0,posY)
+    btn.Text = name
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    btn.Parent = Sidebar
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0,6)
+    return btn
 end
 
-local UpdateTab = createTab("Update", 10)
-local MissTab = createTab("Miss", 170)
-local InfoTab = createTab("Info", 330)
+local UpdateTab = createTab("Update |", 0)
+local MissTab = createTab("Miss |", 50)
+local InfoTab = createTab("Info", 100)
 
 -- Content Frame
 local ContentFrame = Instance.new("Frame")
-ContentFrame.Size = UDim2.new(1,-20,1,-120)
-ContentFrame.Position = UDim2.new(0,10,0,110)
+ContentFrame.Size = UDim2.new(1,-150,1,-80)
+ContentFrame.Position = UDim2.new(0,140,0,70)
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.Parent = MainFrame
 
@@ -89,9 +129,11 @@ ContentFrame.Parent = MainFrame
 local Pages = {}
 
 -- Page Update
-local UpdatePage = Instance.new("Frame")
+local UpdatePage = Instance.new("ScrollingFrame")
 UpdatePage.Size = UDim2.new(1,0,1,0)
 UpdatePage.BackgroundTransparency = 1
+UpdatePage.ScrollBarThickness = 8
+UpdatePage.CanvasSize = UDim2.new(0,0,0,200)
 UpdatePage.Parent = ContentFrame
 
 local UpdateLabel = Instance.new("TextLabel")
@@ -101,7 +143,7 @@ UpdateLabel.TextSize = 16
 UpdateLabel.TextColor3 = Color3.fromRGB(255,255,255)
 UpdateLabel.TextWrapped = true
 UpdateLabel.BackgroundTransparency = 1
-UpdateLabel.Size = UDim2.new(1,0,1,0)
+UpdateLabel.Size = UDim2.new(1,0,0,200)
 UpdateLabel.Parent = UpdatePage
 
 Pages["Update"] = UpdatePage
@@ -113,10 +155,9 @@ MissPage.BackgroundTransparency = 1
 MissPage.Visible = false
 MissPage.Parent = ContentFrame
 
--- Anti-AFK Toggle
 local AntiAFKBtn = Instance.new("TextButton")
 AntiAFKBtn.Size = UDim2.new(0,200,0,50)
-AntiAFKBtn.Position = UDim2.new(0,20,0,20)
+AntiAFKBtn.Position = UDim2.new(0,10,0,20)
 AntiAFKBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
 AntiAFKBtn.TextColor3 = Color3.fromRGB(255,255,255)
 AntiAFKBtn.Font = Enum.Font.GothamBold
@@ -136,10 +177,9 @@ AntiAFKBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- God Mode Toggle
 local GodBtn = Instance.new("TextButton")
 GodBtn.Size = UDim2.new(0,200,0,50)
-GodBtn.Position = UDim2.new(0,20,0,90)
+GodBtn.Position = UDim2.new(0,10,0,90)
 GodBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
 GodBtn.TextColor3 = Color3.fromRGB(255,255,255)
 GodBtn.Font = Enum.Font.GothamBold
@@ -162,9 +202,11 @@ end)
 Pages["Miss"] = MissPage
 
 -- Page Info
-local InfoPage = Instance.new("Frame")
+local InfoPage = Instance.new("ScrollingFrame")
 InfoPage.Size = UDim2.new(1,0,1,0)
 InfoPage.BackgroundTransparency = 1
+InfoPage.ScrollBarThickness = 8
+InfoPage.CanvasSize = UDim2.new(0,0,0,200)
 InfoPage.Visible = false
 InfoPage.Parent = ContentFrame
 
@@ -173,26 +215,42 @@ playerInfo.Font = Enum.Font.Gotham
 playerInfo.TextSize = 16
 playerInfo.TextColor3 = Color3.fromRGB(255,255,255)
 playerInfo.BackgroundTransparency = 1
-playerInfo.Size = UDim2.new(1,0,1,0)
+playerInfo.Size = UDim2.new(1,0,0,200)
 playerInfo.TextWrapped = true
 playerInfo.Parent = InfoPage
 
 Pages["Info"] = InfoPage
 
--- Tab Buttons
-local function switchTab(name)
-    for k,v in pairs(Pages) do
-        v.Visible = false
+-- Tab switching with Active Highlight & Hover
+local activeTab = "Update"
+local function setActiveTab(tabName)
+    activeTab = tabName
+    local tabs = {UpdateTab, MissTab, InfoTab}
+    for _,btn in pairs(tabs) do
+        if btn.Text:find(tabName) then
+            btn.BackgroundColor3 = Color3.fromRGB(80,80,80)
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+        end
     end
-    Pages[name].Visible = true
+    switchTab(tabName)
 end
 
-UpdateTab.MouseButton1Click:Connect(function() switchTab("Update") end)
-MissTab.MouseButton1Click:Connect(function() switchTab("Miss") end)
-InfoTab.MouseButton1Click:Connect(function() switchTab("Info") end)
+local function addHover(btn, name)
+    btn.MouseEnter:Connect(function() if activeTab ~= name then btn.BackgroundColor3 = Color3.fromRGB(70,70,70) end end)
+    btn.MouseLeave:Connect(function() if activeTab ~= name then btn.BackgroundColor3 = Color3.fromRGB(50,50,50) end end)
+end
+
+addHover(UpdateTab,"Update")
+addHover(MissTab,"Miss")
+addHover(InfoTab,"Info")
+
+UpdateTab.MouseButton1Click:Connect(function() setActiveTab("Update") end)
+MissTab.MouseButton1Click:Connect(function() setActiveTab("Miss") end)
+InfoTab.MouseButton1Click:Connect(function() setActiveTab("Info") end)
 
 -- Default page
-switchTab("Update")
+setActiveTab("Update")
 
 -- Anti-AFK behavior
 player.Idled:Connect(function()
@@ -226,7 +284,7 @@ RunService.RenderStepped:Connect(function()
     playerInfo.Text = "Player: "..player.Name.."\nPlayTime: "..mins.."m "..secs.."s"
 end)
 
--- UI Toggle Button (มุมขวาบน)
+-- UI Toggle Button (ติด MainFrame)
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0,40,0,40)
 ToggleBtn.Position = UDim2.new(1,-50,0,10)
