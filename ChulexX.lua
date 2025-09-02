@@ -1,282 +1,200 @@
--- Modern Script Hub UI
--- LocalScript (วางใน StarterPlayerScripts หรือ StarterGui)
-
+-- Services
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
-local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
--- Anti-AFK
+-- Anti-AFK Variables
 local antiAFKEnabled = false
-local elapsedTime = 0
+local antiAFKConnection
 
--- ScreenGui
+-- God Mode Variables
+local godModeEnabled = false
+local humanoid
+
+-- สร้าง ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ModernHubUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Toggle UI Button
-local ToggleUIBtn = Instance.new("ImageButton")
-ToggleUIBtn.Size = UDim2.new(0, 40, 0, 40)
-ToggleUIBtn.Position = UDim2.new(1, -50, 0, 10)
-ToggleUIBtn.Image = "rbxassetid://3926305904"
-ToggleUIBtn.ImageRectOffset = Vector2.new(964, 324)
-ToggleUIBtn.ImageRectSize = Vector2.new(36, 36)
-ToggleUIBtn.BackgroundTransparency = 1
-ToggleUIBtn.Parent = ScreenGui
-
--- Main Frame (Responsive)
+-- MainFrame
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0.8, 0, 0.6, 0)
-MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.BackgroundTransparency = 0.5
-MainFrame.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-MainFrame.ClipsDescendants = true
+MainFrame.Size = UDim2.new(0, 400, 0, 260)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
--- Gradient
-local UIGradient = Instance.new("UIGradient")
-UIGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 170, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 80, 200))
-}
-UIGradient.Rotation = 45
-UIGradient.Parent = MainFrame
+-- UICorner
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = MainFrame
 
--- Corner + Shadow
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = MainFrame
-
-local Shadow = Instance.new("ImageLabel")
-Shadow.Size = UDim2.new(1, 20, 1, 20)
-Shadow.Position = UDim2.new(0, -10, 0, -10)
-Shadow.BackgroundTransparency = 1
-Shadow.Image = "rbxassetid://1316045217"
-Shadow.ImageTransparency = 0.5
-Shadow.Parent = MainFrame
-
--- Header
-local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 60)
-Header.BackgroundTransparency = 1
-Header.Parent = MainFrame
-
-local Logo = Instance.new("ImageLabel")
-Logo.Size = UDim2.new(0, 50, 0, 50)
-Logo.Position = UDim2.new(0, 10, 0.5, -25)
-Logo.BackgroundTransparency = 1
-Logo.Image = "rbxassetid://6031071050"
-Logo.Parent = Header
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0, 200, 0, 30)
-Title.Position = UDim2.new(0, 70, 0, 10)
-Title.Text = "Modern Script Hub"
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 20
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.BackgroundTransparency = 1
-Title.Parent = Header
-
-local Version = Instance.new("TextLabel")
-Version.Size = UDim2.new(0, 200, 0, 20)
-Version.Position = UDim2.new(0, 70, 0, 35)
-Version.Text = "v1.0"
-Version.Font = Enum.Font.Gotham
-Version.TextSize = 14
-Version.TextColor3 = Color3.fromRGB(200, 220, 255)
-Version.BackgroundTransparency = 1
-Version.Parent = Header
+-- TitleBar
+local TitleBar = Instance.new("TextLabel")
+TitleBar.Size = UDim2.new(1, 0, 0, 40)
+TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TitleBar.Text = "⚡ Chulex X Hub ⚡"
+TitleBar.TextColor3 = Color3.new(1, 1, 1)
+TitleBar.TextSize = 20
+TitleBar.Font = Enum.Font.GothamBold
+TitleBar.Parent = MainFrame
 
 -- Sidebar
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 0.2 * MainFrame.AbsoluteSize.X, 1, -60)
-Sidebar.Position = UDim2.new(0, 0, 0, 60)
-Sidebar.BackgroundTransparency = 0.3
-Sidebar.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+Sidebar.Size = UDim2.new(0, 120, 1, -40)
+Sidebar.Position = UDim2.new(0, 0, 0, 40)
+Sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 Sidebar.Parent = MainFrame
-
-local UICornerSide = Instance.new("UICorner")
-UICornerSide.CornerRadius = UDim.new(0, 10)
-UICornerSide.Parent = Sidebar
 
 -- Content
 local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, -130, 1, -70)
-Content.Position = UDim2.new(0, 130, 0, 70)
-Content.BackgroundTransparency = 1
+Content.Size = UDim2.new(1, -120, 1, -40)
+Content.Position = UDim2.new(0, 120, 0, 40)
+Content.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Content.Parent = MainFrame
 
--- ฟังก์ชัน Hover Effect
-local function addHoverEffect(button)
-    button.MouseEnter:Connect(function()
-        if button.BackgroundColor3 ~= Color3.fromRGB(0,200,255) then
-            button.BackgroundColor3 = Color3.fromRGB(0,170,255)
-        end
-    end)
-    button.MouseLeave:Connect(function()
-        if button.BackgroundColor3 ~= Color3.fromRGB(0,200,255) then
-            button.BackgroundColor3 = Color3.fromRGB(0,140,255)
-        end
-    end)
-end
-
--- สร้างปุ่ม Sidebar
-local function createButton(name, posY)
+-- UI Template
+local function createButton(name, text)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -20, 0, 40)
-    btn.Position = UDim2.new(0, 10, 0, posY)
-    btn.Text = name
-    btn.Font = Enum.Font.GothamBold
+    btn.Name = name
+    btn.Size = UDim2.new(1, -10, 0, 40)
+    btn.Position = UDim2.new(0, 5, 0, 0)
+    btn.Text = text
+    btn.Font = Enum.Font.Gotham
     btn.TextSize = 16
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.BackgroundColor3 = Color3.fromRGB(0,140,255)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.AutoButtonColor = true
     btn.Parent = Sidebar
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0,8)
-    corner.Parent = btn
-    addHoverEffect(btn)
     return btn
 end
 
-local AntiAFKBtn = createButton("Anti-AFK", 10)
-local PlayerInfoBtn = createButton("Player Info", 60)
-local UpdatesBtn = createButton("Updates", 110)
-
--- ฟังก์ชันจัดการปุ่ม Active
-local function resetButtonColors()
-    AntiAFKBtn.BackgroundColor3 = Color3.fromRGB(0,140,255)
-    PlayerInfoBtn.BackgroundColor3 = Color3.fromRGB(0,140,255)
-    UpdatesBtn.BackgroundColor3 = Color3.fromRGB(0,140,255)
+-- Glow Effect
+local function setGlow(button, color)
+    local uiStroke = button:FindFirstChild("Glow")
+    if not uiStroke then
+        uiStroke = Instance.new("UIStroke")
+        uiStroke.Name = "Glow"
+        uiStroke.Thickness = 3
+        uiStroke.Parent = button
+    end
+    uiStroke.Color = color
+    uiStroke.Enabled = true
 end
 
-local function selectButton(btn)
-    resetButtonColors()
-    btn.BackgroundColor3 = Color3.fromRGB(0,200,255)
+local function clearGlow(button)
+    local uiStroke = button:FindFirstChild("Glow")
+    if uiStroke then
+        uiStroke.Enabled = false
+    end
 end
 
--- Timer Anti-AFK
-local TimerLabel = Instance.new("TextLabel")
-TimerLabel.Size = UDim2.new(0, 200, 0, 30)
-TimerLabel.Position = UDim2.new(0, 10, 0, 50)
-TimerLabel.Text = "เวลา: 0 วินาที"
-TimerLabel.Font = Enum.Font.Gotham
-TimerLabel.TextSize = 14
-TimerLabel.TextColor3 = Color3.new(1,1,1)
-TimerLabel.BackgroundTransparency = 1
-TimerLabel.Parent = Content
+-- Sidebar Buttons
+local AntiAFKBtn = createButton("AntiAFKBtn", "Anti-AFK")
+AntiAFKBtn.Position = UDim2.new(0, 5, 0, 10)
 
--- Anti-AFK Function
+local GodModeBtn = createButton("GodModeBtn", "God Mode")
+GodModeBtn.Position = UDim2.new(0, 5, 0, 60)
+
+local PlayerInfoBtn = createButton("PlayerInfoBtn", "Player Info")
+PlayerInfoBtn.Position = UDim2.new(0, 5, 0, 110)
+
+local UpdatesBtn = createButton("UpdatesBtn", "Updates")
+UpdatesBtn.Position = UDim2.new(0, 5, 0, 160)
+
+-- Header for Content
+local function createHeader(text)
+    local header = Instance.new("TextLabel")
+    header.Size = UDim2.new(1, 0, 0, 40)
+    header.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    header.Text = text
+    header.Font = Enum.Font.GothamBold
+    header.TextSize = 18
+    header.TextColor3 = Color3.new(1, 1, 1)
+    header.Parent = Content
+end
+
+-- Clear Content
+local function clearContent()
+    Content:ClearAllChildren()
+end
+
+-- Functions
 local function toggleAntiAFK()
     antiAFKEnabled = not antiAFKEnabled
     if antiAFKEnabled then
-        AntiAFKBtn.Text = "Anti-AFK ✅"
-        elapsedTime = 0
+        antiAFKConnection = player.Idled:Connect(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+        setGlow(AntiAFKBtn, Color3.fromRGB(0, 255, 100))
     else
-        AntiAFKBtn.Text = "Anti-AFK ❌"
-    end
-end
-
-AntiAFKBtn.MouseButton1Click:Connect(function()
-    toggleAntiAFK()
-    showAntiAFK()
-end)
-
-player.Idled:Connect(function()
-    if antiAFKEnabled then
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
-    end
-end)
-
-task.spawn(function()
-    while true do
-        task.wait(1)
-        if antiAFKEnabled then
-            elapsedTime += 1
-            TimerLabel.Text = "เวลา: " .. elapsedTime .. " วินาที"
+        if antiAFKConnection then
+            antiAFKConnection:Disconnect()
+            antiAFKConnection = nil
         end
+        clearGlow(AntiAFKBtn)
     end
-end)
-
--- ฟังก์ชันแสดงเนื้อหา
-function showAntiAFK()
-    Content:ClearAllChildren()
-    selectButton(AntiAFKBtn)
-
-    local infoLabel = Instance.new("TextLabel")
-    infoLabel.Size = UDim2.new(1,0,0,50)
-    infoLabel.Position = UDim2.new(0,0,0,0)
-    infoLabel.Text = "ระบบ Anti-AFK\nสถานะ: " .. (antiAFKEnabled and "เปิด" or "ปิด")
-    infoLabel.Font = Enum.Font.Gotham
-    infoLabel.TextSize = 16
-    infoLabel.TextColor3 = Color3.new(1,1,1)
-    infoLabel.BackgroundTransparency = 1
-    infoLabel.TextWrapped = true
-    infoLabel.Parent = Content
+    clearContent()
+    createHeader("Anti-AFK")
 end
 
-function showPlayerInfo()
-    Content:ClearAllChildren()
-    selectButton(PlayerInfoBtn)
+local function toggleGodMode()
+    godModeEnabled = not godModeEnabled
+    humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    if godModeEnabled and humanoid then
+        humanoid.NameDisplayDistance = 0 -- แค่กัน reset name
+        humanoid.MaxHealth = math.huge
+        humanoid.Health = math.huge
+        setGlow(GodModeBtn, Color3.fromRGB(255, 255, 0))
+    else
+        if humanoid then
+            humanoid.MaxHealth = 100
+            humanoid.Health = 100
+        end
+        clearGlow(GodModeBtn)
+    end
+    clearContent()
+    createHeader("God Mode")
+end
+
+local function showPlayerInfo()
+    clearContent()
+    createHeader("Player Info")
 
     local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1,0,0,30)
-    nameLabel.Position = UDim2.new(0,0,0,0)
+    nameLabel.Size = UDim2.new(1, 0, 0, 30)
+    nameLabel.Position = UDim2.new(0, 0, 0, 50)
     nameLabel.Text = "ชื่อผู้เล่น: " .. player.Name
     nameLabel.Font = Enum.Font.Gotham
     nameLabel.TextSize = 16
-    nameLabel.TextColor3 = Color3.new(1,1,1)
+    nameLabel.TextColor3 = Color3.new(1, 1, 1)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Parent = Content
-
-    local idLabel = Instance.new("TextLabel")
-    idLabel.Size = UDim2.new(1,0,0,30)
-    idLabel.Position = UDim2.new(0,0,0,35)
-    idLabel.Text = "UserId: " .. player.UserId
-    idLabel.Font = Enum.Font.Gotham
-    idLabel.TextSize = 16
-    idLabel.TextColor3 = Color3.new(1,1,1)
-    idLabel.BackgroundTransparency = 1
-    idLabel.Parent = Content
 end
 
-function showUpdates()
-    Content:ClearAllChildren()
-    selectButton(UpdatesBtn)
+local function showUpdates()
+    clearContent()
+    createHeader("Updates")
 
     local updatesLabel = Instance.new("TextLabel")
-    updatesLabel.Size = UDim2.new(1,0,1,0)
-    updatesLabel.Position = UDim2.new(0,0,0,0)
-    updatesLabel.Text = "- v1.0: เปิดตัว Modern Script Hub\n- เพิ่มระบบ Anti-AFK\n- เพิ่มเมนู Player Info และ Updates"
+    updatesLabel.Size = UDim2.new(1, -10, 1, -50)
+    updatesLabel.Position = UDim2.new(0, 5, 0, 50)
+    updatesLabel.Text = "- v1.0: Modern Hub เปิดตัว\n- เพิ่ม Anti-AFK\n- เพิ่ม Player Info\n- เพิ่ม God Mode"
     updatesLabel.Font = Enum.Font.Gotham
     updatesLabel.TextSize = 16
-    updatesLabel.TextColor3 = Color3.new(1,1,1)
+    updatesLabel.TextColor3 = Color3.new(1, 1, 1)
     updatesLabel.TextWrapped = true
     updatesLabel.BackgroundTransparency = 1
     updatesLabel.Parent = Content
 end
 
+-- Button Events
+AntiAFKBtn.MouseButton1Click:Connect(toggleAntiAFK)
+GodModeBtn.MouseButton1Click:Connect(toggleGodMode)
 PlayerInfoBtn.MouseButton1Click:Connect(showPlayerInfo)
 UpdatesBtn.MouseButton1Click:Connect(showUpdates)
 
--- เปิดหน้าเริ่มต้น
-showAntiAFK()
-
--- Animation เปิด/ปิด UI
-local uiOpen = true
-local function toggleUI()
-    uiOpen = not uiOpen
-    local goal = {}
-    if uiOpen then
-        goal.Position = UDim2.new(0.5, 0, 0.5, 0)
-    else
-        goal.Position = UDim2.new(0.5, 0, 1.5, 0)
-    end
-    TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), goal):Play()
-end
-
-ToggleUIBtn.MouseButton1Click:Connect(toggleUI)
+-- Default Page
+showUpdates()
