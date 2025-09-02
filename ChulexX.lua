@@ -284,12 +284,13 @@ player.Idled:Connect(function()
     end
 end)
 
--- God Mode behavior (อมตะจริง)
+-- God Mode behavior (อมตะแบบ LocalPlayer)
 RunService.Heartbeat:Connect(function()
     if GodModeEnabled and player.Character then
         local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
         if humanoid then
-            humanoid.Health = humanoid.MaxHealth
+            humanoid.MaxHealth = 1000
+            humanoid.Health = 1000
         end
     end
 end)
