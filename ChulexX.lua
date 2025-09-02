@@ -90,7 +90,7 @@ Version.Size = UDim2.new(1,0,0,20)
 Version.Position = UDim2.new(0,0,0,40)
 Version.Parent = MainFrame
 
--- Sidebar Tabs (แนวตั้ง)
+-- Sidebar Tabs
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0,120,1,-60)
 Sidebar.Position = UDim2.new(0,10,0,70)
@@ -128,7 +128,7 @@ ContentFrame.Parent = MainFrame
 -- Pages
 local Pages = {}
 
--- Page Update
+-- Update Page
 local UpdatePage = Instance.new("ScrollingFrame")
 UpdatePage.Size = UDim2.new(1,0,1,0)
 UpdatePage.BackgroundTransparency = 1
@@ -148,7 +148,7 @@ UpdateLabel.Parent = UpdatePage
 
 Pages["Update"] = UpdatePage
 
--- Page Miss
+-- Miss Page
 local MissPage = Instance.new("Frame")
 MissPage.Size = UDim2.new(1,0,1,0)
 MissPage.BackgroundTransparency = 1
@@ -181,7 +181,7 @@ corner2.CornerRadius = UDim.new(0,8)
 
 Pages["Miss"] = MissPage
 
--- Page Info
+-- Info Page
 local InfoPage = Instance.new("ScrollingFrame")
 InfoPage.Size = UDim2.new(1,0,1,0)
 InfoPage.BackgroundTransparency = 1
@@ -201,7 +201,7 @@ playerInfo.Parent = InfoPage
 
 Pages["Info"] = InfoPage
 
--- Function switchTab
+-- Switch Tabs
 local activeTab = "Update"
 local function switchTab(tabName)
     for name, page in pairs(Pages) do
@@ -238,7 +238,7 @@ InfoTab.MouseButton1Click:Connect(function() setActiveTab("Info") end)
 
 setActiveTab("Update")
 
--- Anti-AFK & God Mode toggle
+-- Highlight function
 local function setHighlight(color)
     if player.Character then
         local old = player.Character:FindFirstChild("GlowHighlight")
@@ -254,6 +254,7 @@ local function setHighlight(color)
     end
 end
 
+-- Anti-AFK toggle
 AntiAFKBtn.MouseButton1Click:Connect(function()
     AntiAFKEnabled = not AntiAFKEnabled
     AntiAFKBtn.Text = "Anti-AFK ["..(AntiAFKEnabled and "ON" or "OFF").."]"
@@ -264,6 +265,7 @@ AntiAFKBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+-- God Mode toggle
 GodBtn.MouseButton1Click:Connect(function()
     GodModeEnabled = not GodModeEnabled
     GodBtn.Text = "God Mode ["..(GodModeEnabled and "ON" or "OFF").."]"
@@ -282,7 +284,17 @@ player.Idled:Connect(function()
     end
 end)
 
--- Update player info every second
+-- God Mode behavior (อมตะจริง)
+RunService.Heartbeat:Connect(function()
+    if GodModeEnabled and player.Character then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.Health = humanoid.MaxHealth
+        end
+    end
+end)
+
+-- Update player info
 RunService.RenderStepped:Connect(function()
     local elapsed = math.floor(tick() - startTime)
     local mins = math.floor(elapsed/60)
@@ -290,16 +302,16 @@ RunService.RenderStepped:Connect(function()
     playerInfo.Text = "Player: "..player.Name.."\nPlayTime: "..mins.."m "..secs.."s"
 end)
 
--- UI Toggle Button
+-- UI Toggle Button (แยกออกจาก MainFrame)
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0,40,0,40)
-ToggleBtn.Position = UDim2.new(1,-50,0,10)
+ToggleBtn.Position = UDim2.new(0,10,0,10)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
 ToggleBtn.Text = "☰"
 ToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
 ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.TextScaled = true
-ToggleBtn.Parent = MainFrame
+ToggleBtn.Parent = ScreenGui
 local cornerToggle = Instance.new("UICorner", ToggleBtn)
 cornerToggle.CornerRadius = UDim.new(0,8)
 
