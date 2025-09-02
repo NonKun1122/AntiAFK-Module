@@ -1,200 +1,169 @@
+-- LocalScript ใส่ใน StarterPlayerScripts
+
 -- Services
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
+
 local player = Players.LocalPlayer
-
--- Anti-AFK Variables
-local antiAFKEnabled = false
-local antiAFKConnection
-
--- God Mode Variables
-local godModeEnabled = false
-local humanoid
+local playerGui = player:WaitForChild("PlayerGui")
 
 -- สร้าง ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ModernHubUI"
+ScreenGui.Parent = playerGui
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
--- MainFrame
+-- กรอบหลัก
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 400, 0, 260)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Size = UDim2.new(0.4, 0, 0.5, 0)
+MainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 MainFrame.BorderSizePixel = 0
+MainFrame.Visible = true
 MainFrame.Parent = ScreenGui
 
--- UICorner
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = MainFrame
+-- UI Corner
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = MainFrame
 
--- TitleBar
-local TitleBar = Instance.new("TextLabel")
-TitleBar.Size = UDim2.new(1, 0, 0, 40)
-TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-TitleBar.Text = "⚡ Chulex X Hub ⚡"
-TitleBar.TextColor3 = Color3.new(1, 1, 1)
-TitleBar.TextSize = 20
-TitleBar.Font = Enum.Font.GothamBold
-TitleBar.Parent = MainFrame
+-- Title Bar
+local Title = Instance.new("TextLabel")
+Title.Text = "⚡ Chulex X Hub"
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundTransparency = 1
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextScaled = true
+Title.Parent = MainFrame
 
--- Sidebar
-local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 120, 1, -40)
-Sidebar.Position = UDim2.new(0, 0, 0, 40)
-Sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Sidebar.Parent = MainFrame
+-- แถบเมนูด้านบน
+local TabFrame = Instance.new("Frame")
+TabFrame.Size = UDim2.new(1, 0, 0, 30)
+TabFrame.Position = UDim2.new(0, 0, 0, 40)
+TabFrame.BackgroundTransparency = 1
+TabFrame.Parent = MainFrame
 
--- Content
-local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, -120, 1, -40)
-Content.Position = UDim2.new(0, 120, 0, 40)
-Content.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-Content.Parent = MainFrame
+local UIListLayoutTabs = Instance.new("UIListLayout")
+UIListLayoutTabs.FillDirection = Enum.FillDirection.Horizontal
+UIListLayoutTabs.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayoutTabs.Padding = UDim.new(0, 8)
+UIListLayoutTabs.Parent = TabFrame
 
--- UI Template
-local function createButton(name, text)
-    local btn = Instance.new("TextButton")
-    btn.Name = name
-    btn.Size = UDim2.new(1, -10, 0, 40)
-    btn.Position = UDim2.new(0, 5, 0, 0)
-    btn.Text = text
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 16
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.AutoButtonColor = true
-    btn.Parent = Sidebar
-    return btn
-end
+-- กรอบเนื้อหา
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, -20, 1, -80)
+ContentFrame.Position = UDim2.new(0, 10, 0, 70)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
 
--- Glow Effect
-local function setGlow(button, color)
-    local uiStroke = button:FindFirstChild("Glow")
-    if not uiStroke then
-        uiStroke = Instance.new("UIStroke")
-        uiStroke.Name = "Glow"
-        uiStroke.Thickness = 3
-        uiStroke.Parent = button
-    end
-    uiStroke.Color = color
-    uiStroke.Enabled = true
-end
+-- Highlight ฟังก์ชัน
+local function setHighlight(color)
+    if player.Character then
+        local old = player.Character:FindFirstChild("GlowHighlight")
+        if old then old:Destroy() end
 
-local function clearGlow(button)
-    local uiStroke = button:FindFirstChild("Glow")
-    if uiStroke then
-        uiStroke.Enabled = false
+        if color then
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "GlowHighlight"
+            highlight.FillTransparency = 1
+            highlight.OutlineTransparency = 0
+            highlight.OutlineColor = color
+            highlight.Parent = player.Character
+        end
     end
 end
 
--- Sidebar Buttons
-local AntiAFKBtn = createButton("AntiAFKBtn", "Anti-AFK")
-AntiAFKBtn.Position = UDim2.new(0, 5, 0, 10)
+-- ฟังก์ชันสร้างแท็บ
+local Tabs = {}
+local function createTab(name)
+    local Button = Instance.new("TextButton")
+    Button.Text = name
+    Button.Size = UDim2.new(0, 100, 1, 0)
+    Button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.Font = Enum.Font.Gotham
+    Button.TextScaled = true
+    Button.Parent = TabFrame
 
-local GodModeBtn = createButton("GodModeBtn", "God Mode")
-GodModeBtn.Position = UDim2.new(0, 5, 0, 60)
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(1, 0, 1, 0)
+    Frame.BackgroundTransparency = 1
+    Frame.Visible = false
+    Frame.Parent = ContentFrame
 
-local PlayerInfoBtn = createButton("PlayerInfoBtn", "Player Info")
-PlayerInfoBtn.Position = UDim2.new(0, 5, 0, 110)
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Padding = UDim.new(0, 10)
+    UIListLayout.Parent = Frame
 
-local UpdatesBtn = createButton("UpdatesBtn", "Updates")
-UpdatesBtn.Position = UDim2.new(0, 5, 0, 160)
+    Button.MouseButton1Click:Connect(function()
+        for _, v in pairs(ContentFrame:GetChildren()) do
+            if v:IsA("Frame") then v.Visible = false end
+        end
+        Frame.Visible = true
+    end)
 
--- Header for Content
-local function createHeader(text)
-    local header = Instance.new("TextLabel")
-    header.Size = UDim2.new(1, 0, 0, 40)
-    header.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    header.Text = text
-    header.Font = Enum.Font.GothamBold
-    header.TextSize = 18
-    header.TextColor3 = Color3.new(1, 1, 1)
-    header.Parent = Content
+    Tabs[name] = Frame
 end
 
--- Clear Content
-local function clearContent()
-    Content:ClearAllChildren()
+-- ฟังก์ชันสร้าง Toggle ปุ่ม
+local function createToggle(parent, text, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, -20, 0, 40)
+    Button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Button.Text = text .. " [OFF]"
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.Font = Enum.Font.Gotham
+    Button.TextScaled = true
+    Button.Parent = parent
+
+    local state = false
+    Button.MouseButton1Click:Connect(function()
+        state = not state
+        Button.Text = text .. (state and " [ON]" or " [OFF]")
+        callback(state)
+    end)
 end
 
--- Functions
-local function toggleAntiAFK()
-    antiAFKEnabled = not antiAFKEnabled
-    if antiAFKEnabled then
-        antiAFKConnection = player.Idled:Connect(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
+-- สร้างแท็บ Misc
+createTab("Misc")
+
+-- Anti AFK Toggle
+local AntiAFKEnabled = false
+createToggle(Tabs["Misc"], "Anti-AFK", function(state)
+    AntiAFKEnabled = state
+    if state then
+        player.Idled:Connect(function()
+            if AntiAFKEnabled then
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end
         end)
-        setGlow(AntiAFKBtn, Color3.fromRGB(0, 255, 100))
+        setHighlight(Color3.fromRGB(0, 255, 0)) -- เขียว
     else
-        if antiAFKConnection then
-            antiAFKConnection:Disconnect()
-            antiAFKConnection = nil
-        end
-        clearGlow(AntiAFKBtn)
+        setHighlight(nil)
     end
-    clearContent()
-    createHeader("Anti-AFK")
-end
+end)
 
-local function toggleGodMode()
-    godModeEnabled = not godModeEnabled
-    humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-    if godModeEnabled and humanoid then
-        humanoid.NameDisplayDistance = 0 -- แค่กัน reset name
-        humanoid.MaxHealth = math.huge
-        humanoid.Health = math.huge
-        setGlow(GodModeBtn, Color3.fromRGB(255, 255, 0))
+-- God Mode Toggle
+local GodModeEnabled = false
+createToggle(Tabs["Misc"], "God Mode", function(state)
+    GodModeEnabled = state
+    if state then
+        setHighlight(Color3.fromRGB(255, 255, 0)) -- เหลือง
     else
-        if humanoid then
-            humanoid.MaxHealth = 100
-            humanoid.Health = 100
-        end
-        clearGlow(GodModeBtn)
+        setHighlight(nil)
     end
-    clearContent()
-    createHeader("God Mode")
-end
+end)
 
-local function showPlayerInfo()
-    clearContent()
-    createHeader("Player Info")
+-- เปิดแท็บแรกตอนเริ่ม
+Tabs["Misc"].Visible = true
 
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, 0, 0, 30)
-    nameLabel.Position = UDim2.new(0, 0, 0, 50)
-    nameLabel.Text = "ชื่อผู้เล่น: " .. player.Name
-    nameLabel.Font = Enum.Font.Gotham
-    nameLabel.TextSize = 16
-    nameLabel.TextColor3 = Color3.new(1, 1, 1)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Parent = Content
-end
-
-local function showUpdates()
-    clearContent()
-    createHeader("Updates")
-
-    local updatesLabel = Instance.new("TextLabel")
-    updatesLabel.Size = UDim2.new(1, -10, 1, -50)
-    updatesLabel.Position = UDim2.new(0, 5, 0, 50)
-    updatesLabel.Text = "- v1.0: Modern Hub เปิดตัว\n- เพิ่ม Anti-AFK\n- เพิ่ม Player Info\n- เพิ่ม God Mode"
-    updatesLabel.Font = Enum.Font.Gotham
-    updatesLabel.TextSize = 16
-    updatesLabel.TextColor3 = Color3.new(1, 1, 1)
-    updatesLabel.TextWrapped = true
-    updatesLabel.BackgroundTransparency = 1
-    updatesLabel.Parent = Content
-end
-
--- Button Events
-AntiAFKBtn.MouseButton1Click:Connect(toggleAntiAFK)
-GodModeBtn.MouseButton1Click:Connect(toggleGodMode)
-PlayerInfoBtn.MouseButton1Click:Connect(showPlayerInfo)
-UpdatesBtn.MouseButton1Click:Connect(showUpdates)
-
--- Default Page
-showUpdates()
+-- Hotkey เปิด/ปิด UI
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
