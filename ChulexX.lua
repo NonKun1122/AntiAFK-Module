@@ -167,16 +167,6 @@ AntiAFKBtn.Parent = MissPage
 local corner1 = Instance.new("UICorner", AntiAFKBtn)
 corner1.CornerRadius = UDim.new(0,8)
 
-AntiAFKBtn.MouseButton1Click:Connect(function()
-    AntiAFKEnabled = not AntiAFKEnabled
-    AntiAFKBtn.Text = "Anti-AFK ["..(AntiAFKEnabled and "ON" or "OFF").."]"
-    if AntiAFKEnabled then
-        setHighlight(Color3.fromRGB(0,255,0))
-    else
-        setHighlight(nil)
-    end
-end)
-
 local GodBtn = Instance.new("TextButton")
 GodBtn.Size = UDim2.new(0,200,0,50)
 GodBtn.Position = UDim2.new(0,10,0,90)
@@ -188,16 +178,6 @@ GodBtn.Text = "God Mode [OFF]"
 GodBtn.Parent = MissPage
 local corner2 = Instance.new("UICorner", GodBtn)
 corner2.CornerRadius = UDim.new(0,8)
-
-GodBtn.MouseButton1Click:Connect(function()
-    GodModeEnabled = not GodModeEnabled
-    GodBtn.Text = "God Mode ["..(GodModeEnabled and "ON" or "OFF").."]"
-    if GodModeEnabled then
-        setHighlight(Color3.fromRGB(255,255,0))
-    else
-        setHighlight(nil)
-    end
-end)
 
 Pages["Miss"] = MissPage
 
@@ -221,8 +201,14 @@ playerInfo.Parent = InfoPage
 
 Pages["Info"] = InfoPage
 
--- Tab switching with Active Highlight & Hover
+-- Function switchTab
 local activeTab = "Update"
+local function switchTab(tabName)
+    for name, page in pairs(Pages) do
+        page.Visible = (name == tabName)
+    end
+end
+
 local function setActiveTab(tabName)
     activeTab = tabName
     local tabs = {UpdateTab, MissTab, InfoTab}
@@ -236,6 +222,7 @@ local function setActiveTab(tabName)
     switchTab(tabName)
 end
 
+-- Hover Effect
 local function addHover(btn, name)
     btn.MouseEnter:Connect(function() if activeTab ~= name then btn.BackgroundColor3 = Color3.fromRGB(70,70,70) end end)
     btn.MouseLeave:Connect(function() if activeTab ~= name then btn.BackgroundColor3 = Color3.fromRGB(50,50,50) end end)
@@ -249,19 +236,10 @@ UpdateTab.MouseButton1Click:Connect(function() setActiveTab("Update") end)
 MissTab.MouseButton1Click:Connect(function() setActiveTab("Miss") end)
 InfoTab.MouseButton1Click:Connect(function() setActiveTab("Info") end)
 
--- Default page
 setActiveTab("Update")
 
--- Anti-AFK behavior
-player.Idled:Connect(function()
-    if AntiAFKEnabled then
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
-    end
-end)
-
--- Highlight function
-function setHighlight(color)
+-- Anti-AFK & God Mode toggle
+local function setHighlight(color)
     if player.Character then
         local old = player.Character:FindFirstChild("GlowHighlight")
         if old then old:Destroy() end
@@ -276,7 +254,35 @@ function setHighlight(color)
     end
 end
 
--- Update Player Info every second
+AntiAFKBtn.MouseButton1Click:Connect(function()
+    AntiAFKEnabled = not AntiAFKEnabled
+    AntiAFKBtn.Text = "Anti-AFK ["..(AntiAFKEnabled and "ON" or "OFF").."]"
+    if AntiAFKEnabled then
+        setHighlight(Color3.fromRGB(0,255,0))
+    else
+        setHighlight(nil)
+    end
+end)
+
+GodBtn.MouseButton1Click:Connect(function()
+    GodModeEnabled = not GodModeEnabled
+    GodBtn.Text = "God Mode ["..(GodModeEnabled and "ON" or "OFF").."]"
+    if GodModeEnabled then
+        setHighlight(Color3.fromRGB(255,255,0))
+    else
+        setHighlight(nil)
+    end
+end)
+
+-- Anti-AFK behavior
+player.Idled:Connect(function()
+    if AntiAFKEnabled then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end
+end)
+
+-- Update player info every second
 RunService.RenderStepped:Connect(function()
     local elapsed = math.floor(tick() - startTime)
     local mins = math.floor(elapsed/60)
@@ -284,7 +290,7 @@ RunService.RenderStepped:Connect(function()
     playerInfo.Text = "Player: "..player.Name.."\nPlayTime: "..mins.."m "..secs.."s"
 end)
 
--- UI Toggle Button (ติด MainFrame)
+-- UI Toggle Button
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0,40,0,40)
 ToggleBtn.Position = UDim2.new(1,-50,0,10)
