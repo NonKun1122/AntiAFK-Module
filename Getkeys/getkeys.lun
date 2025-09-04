@@ -1,26 +1,95 @@
-local HttpService = game:GetService("HttpService")
+-- Services
 local Players = game:GetService("Players")
-
--- กำหนด Key ที่ผู้เล่นกรอก (ถ้ายังไม่มี ให้เป็น "" หรือ nil)
-local KEY = "" -- ผู้เล่นยังไม่ได้กรอก Key
+local HttpService = game:GetService("HttpService")
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
 
 -- URL API ของ Netlify
-local API_URL = "https://yourproject.netlify.app/.netlify/functions/verifykey"
+local API_URL = "https://gat-keys.netlify.app/.netlify/functions/verifykey"
 
-if KEY == "" or not KEY then
-    warn("❌ ยังไม่มี Key กรุณากรอก Key ก่อน")
-    -- สามารถแสดง GUI แจ้งผู้เล่นกรอก Key แทนการ Kick
-    return
-end
+-- GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "KeyLoaderUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
 
--- ฟังก์ชันตรวจสอบ Key กับ API
-local function checkKey(key)
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 400, 0, 250)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -125)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = MainFrame
+
+-- Title
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -20, 0, 50)
+Title.Position = UDim2.new(0, 10, 0, 10)
+Title.BackgroundTransparency = 1
+Title.Text = "กรุณากรอก Key"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 24
+Title.Parent = MainFrame
+
+-- TextBox กรอก Key
+local KeyBox = Instance.new("TextBox")
+KeyBox.Size = UDim2.new(1, -40, 0, 40)
+KeyBox.Position = UDim2.new(0, 20, 0, 70)
+KeyBox.PlaceholderText = "วาง Key ของคุณที่นี่"
+KeyBox.Text = ""
+KeyBox.TextColor3 = Color3.new(1,1,1)
+KeyBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+KeyBox.ClearTextOnFocus = false
+KeyBox.Font = Enum.Font.Gotham
+KeyBox.TextSize = 18
+KeyBox.Parent = MainFrame
+
+local KeyStatus = Instance.new("TextLabel")
+KeyStatus.Size = UDim2.new(1, -40, 0, 30)
+KeyStatus.Position = UDim2.new(0, 20, 0, 120)
+KeyStatus.BackgroundTransparency = 1
+KeyStatus.TextColor3 = Color3.fromRGB(255, 200, 0)
+KeyStatus.Font = Enum.Font.GothamBold
+KeyStatus.TextSize = 16
+KeyStatus.Text = ""
+KeyStatus.Parent = MainFrame
+
+-- ปุ่ม Verify
+local VerifyBtn = Instance.new("TextButton")
+VerifyBtn.Size = UDim2.new(0.45, -10, 0, 40)
+VerifyBtn.Position = UDim2.new(0, 20, 1, -60)
+VerifyBtn.Text = "ตรวจสอบ Key"
+VerifyBtn.Font = Enum.Font.GothamBold
+VerifyBtn.TextSize = 18
+VerifyBtn.TextColor3 = Color3.new(1,1,1)
+VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+VerifyBtn.Parent = MainFrame
+
+-- ปุ่มสร้าง Key ฟรี
+local GenerateBtn = Instance.new("TextButton")
+GenerateBtn.Size = UDim2.new(0.45, -10, 0, 40)
+GenerateBtn.Position = UDim2.new(0.55, -10, 1, -60)
+GenerateBtn.Text = "สร้าง Key ฟรี"
+GenerateBtn.Font = Enum.Font.GothamBold
+GenerateBtn.TextSize = 18
+GenerateBtn.TextColor3 = Color3.new(1,1,1)
+GenerateBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+GenerateBtn.Parent = MainFrame
+
+-- ฟังก์ชันตรวจสอบ Key
+local function verifyKey(key)
+    KeyStatus.Text = "⏳ กำลังตรวจสอบ..."
     local success, response = pcall(function()
         return HttpService:GetAsync(API_URL .. "?key=" .. key)
     end)
 
     if not success then
-        return false, "ไม่สามารถเชื่อมต่อ API ได้"
+        KeyStatus.Text = "❌ ไม่สามารถเชื่อมต่อ API"
+        return false
     end
 
     local ok, data = pcall(function()
@@ -28,22 +97,43 @@ local function checkKey(key)
     end)
 
     if not ok then
-        return false, "API ตอบกลับไม่ถูกต้อง"
+        KeyStatus.Text = "❌ API ตอบกลับไม่ถูกต้อง"
+        return false
     end
 
     if data.valid then
-        return true, data
+        KeyStatus.Text = "✅ Key ใช้งานได้! ประเภท: "..data.type
+        -- เก็บ Key ไว้ใช้ใน Loader
+        player:SetAttribute("UserKey", key)
+        player:SetAttribute("KeyExpire", data.expire)
+        -- ซ่อน UI
+        MainFrame.Visible = false
+        return true
     else
-        return false, data.reason or "Key ไม่ถูกต้อง"
+        KeyStatus.Text = "❌ Key ไม่ถูกต้องหรือหมดอายุ"
+        return false
     end
 end
 
--- ตรวจสอบ Key
-local ok, result = checkKey(KEY)
-if not ok then
-    warn("❌ Key Invalid: " .. tostring(result))
-    -- สามารถแสดง GUI ให้ผู้เล่นกรอก Key ใหม่ แทน Kick
-    return
-end
+-- Event กด Verify
+VerifyBtn.MouseButton1Click:Connect(function()
+    local key = KeyBox.Text
+    if key == "" then
+        KeyStatus.Text = "❌ กรุณากรอก Key ก่อน"
+        return
+    end
+    verifyKey(key)
+end)
 
-print("✅ Key ใช้งานได้! ประเภท:", result.type, "หมดอายุ:", os.date("%c", result.expire/1000))
+-- Event กดสร้าง Key ฟรี
+GenerateBtn.MouseButton1Click:Connect(function()
+    -- สุ่ม Key 24 ตัวอักษร + แยก -
+    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    local key = ""
+    for i=1,24 do
+        key = key .. chars:sub(math.random(1,#chars), math.random(1,#chars))
+    end
+    key = key:sub(1,4).."-"..key:sub(5,8).."-"..key:sub(9,12).."-"..key:sub(13,16).."-"..key:sub(17,20).."-"..key:sub(21,24)
+    KeyBox.Text = key
+    verifyKey(key)
+end)
