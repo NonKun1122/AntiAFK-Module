@@ -5,7 +5,7 @@ local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 
 -- API URL
-local API_URL = "https://yourproject.netlify.app/.netlify/functions/verifykey"
+local API_URL = "https://gat-keys.netlify.app/.netlify/functions/verifykey"
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
