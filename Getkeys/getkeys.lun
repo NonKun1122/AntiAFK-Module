@@ -1,12 +1,17 @@
--- Loader.lua
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
--- กำหนด Key ที่ผู้เล่นกรอก
-local KEY = "ใส่-Key-ที่ผู้ใช้กรอก"
+-- กำหนด Key ที่ผู้เล่นกรอก (ถ้ายังไม่มี ให้เป็น "" หรือ nil)
+local KEY = "" -- ผู้เล่นยังไม่ได้กรอก Key
 
--- URL API ของ Netlify (เปลี่ยนเป็น URL ของคุณหลัง Deploy)
+-- URL API ของ Netlify
 local API_URL = "https://yourproject.netlify.app/.netlify/functions/verifykey"
+
+if KEY == "" or not KEY then
+    warn("❌ ยังไม่มี Key กรุณากรอก Key ก่อน")
+    -- สามารถแสดง GUI แจ้งผู้เล่นกรอก Key แทนการ Kick
+    return
+end
 
 -- ฟังก์ชันตรวจสอบ Key กับ API
 local function checkKey(key)
@@ -37,31 +42,8 @@ end
 local ok, result = checkKey(KEY)
 if not ok then
     warn("❌ Key Invalid: " .. tostring(result))
-    Players.LocalPlayer:Kick("Key Invalid / Expired ❌")
+    -- สามารถแสดง GUI ให้ผู้เล่นกรอก Key ใหม่ แทน Kick
     return
 end
 
 print("✅ Key ใช้งานได้! ประเภท:", result.type, "หมดอายุ:", os.date("%c", result.expire/1000))
-
--- ตรวจจับ PlaceId (แมพ) เพื่อโหลดสคริปต์เฉพาะเกม
-local placeId = game.PlaceId
-print("🌐 PlaceId:", placeId)
-
-local scripts = {
-    [1234567890] = "Games/GrowGarden.lua", -- Grow a Garden
-    [2233445566] = "Games/GardenTow.lua",  -- Garden Tow
-    [3344556677] = "Games/HuntZombie.lua", -- Hunt Zombie
-}
-
-local targetScript = scripts[placeId]
-if targetScript then
-    -- โหลดสคริปต์ของแมพ (ต้องมีไฟล์ .lua ใน Roblox Studio หรือผ่าน ModuleScript)
-    local func, err = loadfile(targetScript)
-    if func then
-        func()
-    else
-        warn("⚠️ โหลดสคริปต์ไม่สำเร็จ: " .. tostring(err))
-    end
-else
-    warn("⚠️ ไม่พบสคริปต์สำหรับเกมนี้")
-end
