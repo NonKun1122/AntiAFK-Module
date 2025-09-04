@@ -1,121 +1,144 @@
--- Services
-local Players = game:GetService("Players")
+--// Loader Script
 local HttpService = game:GetService("HttpService")
-local player = Players.LocalPlayer
-local PlayerGui = player:WaitForChild("PlayerGui")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlaceId = game.PlaceId  -- เอา PlaceId ของแมพที่ผู้เล่นอยู่
 
--- API URL
+-- API URL ตรวจสอบ Key
 local API_URL = "https://gat-keys.netlify.app/functions/verifykey"
 
--- GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KeyLoaderUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
-
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 400, 0, 220)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -110)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
-
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = MainFrame
-
--- Title
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -20, 0, 40)
-Title.Position = UDim2.new(0, 10, 0, 10)
-Title.BackgroundTransparency = 1
-Title.Text = "🔑 กรุณากรอก Key"
-Title.TextColor3 = Color3.new(1,1,1)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
-Title.Parent = MainFrame
-
--- TextBox กรอก Key
-local KeyBox = Instance.new("TextBox")
-KeyBox.Size = UDim2.new(1, -40, 0, 40)
-KeyBox.Position = UDim2.new(0, 20, 0, 70)
-KeyBox.PlaceholderText = "วาง Key ของคุณที่นี่"
-KeyBox.Text = ""
-KeyBox.TextColor3 = Color3.new(1,1,1)
-KeyBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-KeyBox.ClearTextOnFocus = false
-KeyBox.Font = Enum.Font.Gotham
-KeyBox.TextSize = 18
-KeyBox.Parent = MainFrame
-
--- สถานะ Key
-local KeyStatus = Instance.new("TextLabel")
-KeyStatus.Size = UDim2.new(1, -40, 0, 30)
-KeyStatus.Position = UDim2.new(0, 20, 0, 120)
-KeyStatus.BackgroundTransparency = 1
-KeyStatus.TextColor3 = Color3.fromRGB(255, 200, 0)
-KeyStatus.Font = Enum.Font.GothamBold
-KeyStatus.TextSize = 16
-KeyStatus.Text = ""
-KeyStatus.Parent = MainFrame
-
--- ปุ่ม Verify
-local VerifyBtn = Instance.new("TextButton")
-VerifyBtn.Size = UDim2.new(1, -40, 0, 40)
-VerifyBtn.Position = UDim2.new(0, 20, 1, -60)
-VerifyBtn.Text = "ตรวจสอบ Key"
-VerifyBtn.Font = Enum.Font.GothamBold
-VerifyBtn.TextSize = 18
-VerifyBtn.TextColor3 = Color3.new(1,1,1)
-VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-VerifyBtn.Parent = MainFrame
-
-local BtnCorner = Instance.new("UICorner")
-BtnCorner.CornerRadius = UDim.new(0, 8)
-BtnCorner.Parent = VerifyBtn
-
 -- ฟังก์ชันตรวจสอบ Key
-local function verifyKey(key)
-    KeyStatus.Text = "⏳ กำลังตรวจสอบ..."
-    local success, response = pcall(function()
-        return HttpService:GetAsync(API_URL .. "?key=" .. key)
+local function checkKey(key)
+    local response
+    pcall(function()
+        response = game:HttpGet(API_URL .. "?key=" .. key)
     end)
-
-    if not success then
-        KeyStatus.Text = "❌ ไม่สามารถเชื่อมต่อ API"
-        return false
+    if not response then
+        return false, "ไม่สามารถเชื่อมต่อ API ได้"
     end
 
-    local ok, data = pcall(function()
+    local success, data = pcall(function()
         return HttpService:JSONDecode(response)
     end)
-
-    if not ok then
-        KeyStatus.Text = "❌ API ตอบกลับไม่ถูกต้อง"
-        return false
+    if not success then
+        return false, "API ตอบกลับไม่ถูกต้อง"
     end
 
     if data.valid then
-        KeyStatus.Text = "✅ Key ใช้งานได้! ประเภท: "..data.type
-        -- เก็บ Key ไว้ใช้ใน Loader
-        player:SetAttribute("UserKey", key)
-        player:SetAttribute("KeyExpire", data.expire)
-        -- ซ่อน UI
-        task.wait(1)
-        MainFrame.Visible = false
-        return true
+        return true, data
     else
-        KeyStatus.Text = "❌ Key ไม่ถูกต้องหรือหมดอายุ"
-        return false
+        return false, data.reason or "Key ไม่ถูกต้อง"
     end
 end
 
--- Event กด Verify
+-- ฟังก์ชันโหลดสคริปต์ตามแมพ
+local function loadScriptForMap()
+    local scriptMap = {
+        [1234567890] = "https://gat-keys.netlify.app/scripts/growagarden.lua", -- Grow a Garden
+        [2345678901] = "https://gat-keys.netlify.app/scripts/gardentow.lua",    -- Garden Tow
+        [3456789012] = "https://gat-keys.netlify.app/scripts/huntzombie.lua"   -- Hunt Zombie
+    }
+
+    local url = scriptMap[PlaceId]
+    if not url then
+        LocalPlayer:Kick("❌ ไม่มีสคริปต์สำหรับแมพนี้")
+        return
+    end
+
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(url))()
+    end)
+    if not success then
+        warn("โหลดสคริปต์ไม่สำเร็จ:", err)
+        LocalPlayer:Kick("❌ Error โหลดสคริปต์")
+    end
+end
+
+--// UI สำหรับใส่ Key
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 150)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -75)
+Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+Frame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = Frame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundTransparency = 1
+Title.Text = "🔑 Key Verification"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Parent = Frame
+
+local KeyBox = Instance.new("TextBox")
+KeyBox.Size = UDim2.new(1, -20, 0, 35)
+KeyBox.Position = UDim2.new(0, 10, 0, 45)
+KeyBox.PlaceholderText = "กรอก Key ที่นี่..."
+KeyBox.Text = ""
+KeyBox.ClearTextOnFocus = false
+KeyBox.Font = Enum.Font.Gotham
+KeyBox.TextSize = 14
+KeyBox.TextColor3 = Color3.fromRGB(0,0,0)
+KeyBox.BackgroundColor3 = Color3.fromRGB(255,255,255)
+KeyBox.Parent = Frame
+
+local UICorner2 = Instance.new("UICorner")
+UICorner2.CornerRadius = UDim.new(0, 8)
+UICorner2.Parent = KeyBox
+
+local VerifyBtn = Instance.new("TextButton")
+VerifyBtn.Size = UDim2.new(1, -20, 0, 35)
+VerifyBtn.Position = UDim2.new(0, 10, 0, 90)
+VerifyBtn.Text = "✅ Verify Key"
+VerifyBtn.Font = Enum.Font.GothamBold
+VerifyBtn.TextSize = 14
+VerifyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+VerifyBtn.Parent = Frame
+
+local UICorner3 = Instance.new("UICorner")
+UICorner3.CornerRadius = UDim.new(0, 8)
+UICorner3.Parent = VerifyBtn
+
+local Status = Instance.new("TextLabel")
+Status.Size = UDim2.new(1, 0, 0, 20)
+Status.Position = UDim2.new(0, 0, 1, -20)
+Status.BackgroundTransparency = 1
+Status.Font = Enum.Font.Gotham
+Status.TextSize = 12
+Status.Text = ""
+Status.TextColor3 = Color3.fromRGB(255, 255, 0)
+Status.Parent = Frame
+
+-- กดปุ่มตรวจสอบ
 VerifyBtn.MouseButton1Click:Connect(function()
     local key = KeyBox.Text
     if key == "" then
-        KeyStatus.Text = "❌ กรุณากรอก Key ก่อน"
+        Status.Text = "⚠️ กรุณาใส่ Key"
         return
     end
-    verifyKey(key)
+    
+    Status.Text = "⏳ กำลังตรวจสอบ..."
+    local ok, result = checkKey(key)
+    if not ok then
+        Status.Text = "❌ " .. tostring(result)
+        wait(2)
+        LocalPlayer:Kick("Key Invalid / Expired ❌")
+    else
+        Status.Text = "✅ Key ถูกต้อง! กำลังโหลดสคริปต์..."
+        print("✅ Key ใช้งานได้! ประเภท:", result.type, "หมดอายุ:", os.date("%c", result.expire/1000))
+        wait(1)
+        ScreenGui:Destroy()
+        loadScriptForMap()
+    end
 end)
