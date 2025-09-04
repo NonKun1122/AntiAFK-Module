@@ -1,4 +1,4 @@
---// Loader Script
+--// Loader Script with UI
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -34,9 +34,9 @@ end
 -- ฟังก์ชันโหลดสคริปต์ตามแมพ
 local function loadScriptForMap()
     local scriptMap = {
-        [1234567890] = "https://gat-keys.netlify.app/scripts/growagarden.lua", -- Grow a Garden
-        [2345678901] = "https://gat-keys.netlify.app/scripts/gardentow.lua",    -- Garden Tow
-        [3456789012] = "https://gat-keys.netlify.app/scripts/huntzombie.lua"   -- Hunt Zombie
+        [1234567890] = "https://gat-keys.netlify.app/scripts/growagarden.lua",
+        [2345678901] = "https://gat-keys.netlify.app/scripts/gardentow.lua",
+        [3456789012] = "https://gat-keys.netlify.app/scripts/huntzombie.lua"
     }
 
     local url = scriptMap[PlaceId]
@@ -59,8 +59,8 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 300, 0, 150)
-Frame.Position = UDim2.new(0.5, -150, 0.5, -75)
+Frame.Size = UDim2.new(0, 300, 0, 220)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -110)
 Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Frame.BorderSizePixel = 0
 Frame.Active = true
@@ -96,6 +96,7 @@ local UICorner2 = Instance.new("UICorner")
 UICorner2.CornerRadius = UDim.new(0, 8)
 UICorner2.Parent = KeyBox
 
+-- ปุ่ม Verify Key
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Size = UDim2.new(1, -20, 0, 35)
 VerifyBtn.Position = UDim2.new(0, 10, 0, 90)
@@ -110,9 +111,25 @@ local UICorner3 = Instance.new("UICorner")
 UICorner3.CornerRadius = UDim.new(0, 8)
 UICorner3.Parent = VerifyBtn
 
+-- ปุ่ม Get Key
+local GetKeyBtn = Instance.new("TextButton")
+GetKeyBtn.Size = UDim2.new(1, -20, 0, 35)
+GetKeyBtn.Position = UDim2.new(0, 10, 0, 135)
+GetKeyBtn.Text = "🌐 Get Key"
+GetKeyBtn.Font = Enum.Font.GothamBold
+GetKeyBtn.TextSize = 14
+GetKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+GetKeyBtn.BackgroundColor3 = Color3.fromRGB(0, 102, 204)
+GetKeyBtn.Parent = Frame
+
+local UICorner4 = Instance.new("UICorner")
+UICorner4.CornerRadius = UDim.new(0, 8)
+UICorner4.Parent = GetKeyBtn
+
+-- Status
 local Status = Instance.new("TextLabel")
 Status.Size = UDim2.new(1, 0, 0, 20)
-Status.Position = UDim2.new(0, 0, 1, -20)
+Status.Position = UDim2.new(0, 0, 1, -25)
 Status.BackgroundTransparency = 1
 Status.Font = Enum.Font.Gotham
 Status.TextSize = 12
@@ -120,7 +137,7 @@ Status.Text = ""
 Status.TextColor3 = Color3.fromRGB(255, 255, 0)
 Status.Parent = Frame
 
--- กดปุ่มตรวจสอบ
+-- Event: Verify Key
 VerifyBtn.MouseButton1Click:Connect(function()
     local key = KeyBox.Text
     if key == "" then
@@ -136,9 +153,20 @@ VerifyBtn.MouseButton1Click:Connect(function()
         LocalPlayer:Kick("Key Invalid / Expired ❌")
     else
         Status.Text = "✅ Key ถูกต้อง! กำลังโหลดสคริปต์..."
-        print("✅ Key ใช้งานได้! ประเภท:", result.type, "หมดอายุ:", os.date("%c", result.expire/1000))
+        print("✅ Key ใช้งานได้! หมดอายุ:", os.date("%c", result.expire/1000))
         wait(1)
         ScreenGui:Destroy()
         loadScriptForMap()
+    end
+end)
+
+-- Event: Get Key
+GetKeyBtn.MouseButton1Click:Connect(function()
+    local url = "https://gat-keys.netlify.app" 
+    if syn then
+        syn.request({Url = url, Method = "GET"})
+    else
+        Status.Text = "🔗 โปรดเปิดเว็บนี้เพื่อสร้าง Key: "..url
+        print("เปิดเว็บนี้เพื่อสร้าง Key:", url)
     end
 end)
