@@ -4,8 +4,8 @@ local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 
--- URL API ของ Netlify
-local API_URL = "https://gat-keys.netlify.app/.netlify/functions/verifykey"
+-- API URL
+local API_URL = "https://yourproject.netlify.app/.netlify/functions/verifykey"
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -14,8 +14,8 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 400, 0, 250)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -125)
+MainFrame.Size = UDim2.new(0, 400, 0, 220)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -110)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
@@ -26,13 +26,13 @@ UICorner.Parent = MainFrame
 
 -- Title
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -20, 0, 50)
+Title.Size = UDim2.new(1, -20, 0, 40)
 Title.Position = UDim2.new(0, 10, 0, 10)
 Title.BackgroundTransparency = 1
-Title.Text = "กรุณากรอก Key"
+Title.Text = "🔑 กรุณากรอก Key"
 Title.TextColor3 = Color3.new(1,1,1)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 24
+Title.TextSize = 22
 Title.Parent = MainFrame
 
 -- TextBox กรอก Key
@@ -48,6 +48,7 @@ KeyBox.Font = Enum.Font.Gotham
 KeyBox.TextSize = 18
 KeyBox.Parent = MainFrame
 
+-- สถานะ Key
 local KeyStatus = Instance.new("TextLabel")
 KeyStatus.Size = UDim2.new(1, -40, 0, 30)
 KeyStatus.Position = UDim2.new(0, 20, 0, 120)
@@ -60,7 +61,7 @@ KeyStatus.Parent = MainFrame
 
 -- ปุ่ม Verify
 local VerifyBtn = Instance.new("TextButton")
-VerifyBtn.Size = UDim2.new(0.45, -10, 0, 40)
+VerifyBtn.Size = UDim2.new(1, -40, 0, 40)
 VerifyBtn.Position = UDim2.new(0, 20, 1, -60)
 VerifyBtn.Text = "ตรวจสอบ Key"
 VerifyBtn.Font = Enum.Font.GothamBold
@@ -69,16 +70,9 @@ VerifyBtn.TextColor3 = Color3.new(1,1,1)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 VerifyBtn.Parent = MainFrame
 
--- ปุ่มสร้าง Key ฟรี
-local GenerateBtn = Instance.new("TextButton")
-GenerateBtn.Size = UDim2.new(0.45, -10, 0, 40)
-GenerateBtn.Position = UDim2.new(0.55, -10, 1, -60)
-GenerateBtn.Text = "สร้าง Key ฟรี"
-GenerateBtn.Font = Enum.Font.GothamBold
-GenerateBtn.TextSize = 18
-GenerateBtn.TextColor3 = Color3.new(1,1,1)
-GenerateBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-GenerateBtn.Parent = MainFrame
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 8)
+BtnCorner.Parent = VerifyBtn
 
 -- ฟังก์ชันตรวจสอบ Key
 local function verifyKey(key)
@@ -107,6 +101,7 @@ local function verifyKey(key)
         player:SetAttribute("UserKey", key)
         player:SetAttribute("KeyExpire", data.expire)
         -- ซ่อน UI
+        task.wait(1)
         MainFrame.Visible = false
         return true
     else
@@ -122,18 +117,5 @@ VerifyBtn.MouseButton1Click:Connect(function()
         KeyStatus.Text = "❌ กรุณากรอก Key ก่อน"
         return
     end
-    verifyKey(key)
-end)
-
--- Event กดสร้าง Key ฟรี
-GenerateBtn.MouseButton1Click:Connect(function()
-    -- สุ่ม Key 24 ตัวอักษร + แยก -
-    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    local key = ""
-    for i=1,24 do
-        key = key .. chars:sub(math.random(1,#chars), math.random(1,#chars))
-    end
-    key = key:sub(1,4).."-"..key:sub(5,8).."-"..key:sub(9,12).."-"..key:sub(13,16).."-"..key:sub(17,20).."-"..key:sub(21,24)
-    KeyBox.Text = key
     verifyKey(key)
 end)
