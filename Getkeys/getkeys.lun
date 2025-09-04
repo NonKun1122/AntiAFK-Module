@@ -1,8 +1,8 @@
---// Loader Script with UI
+--// Loader Script with Full UI
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local PlaceId = game.PlaceId  -- เอา PlaceId ของแมพที่ผู้เล่นอยู่
+local PlaceId = game.PlaceId
 
 -- API URL ตรวจสอบ Key
 local API_URL = "https://gat-keys.netlify.app/functions/verifykey"
@@ -10,24 +10,24 @@ local API_URL = "https://gat-keys.netlify.app/functions/verifykey"
 -- ฟังก์ชันตรวจสอบ Key
 local function checkKey(key)
     local response
-    pcall(function()
-        response = game:HttpGet(API_URL .. "?key=" .. key)
+    local success, err = pcall(function()
+        response = game:HttpGet(API_URL .. "?key="..key, true)
     end)
-    if not response then
+    if not success or not response then
         return false, "ไม่สามารถเชื่อมต่อ API ได้"
     end
 
-    local success, data = pcall(function()
+    local ok, data = pcall(function()
         return HttpService:JSONDecode(response)
     end)
-    if not success then
+    if not ok or not data then
         return false, "API ตอบกลับไม่ถูกต้อง"
     end
 
     if data.valid then
         return true, data
     else
-        return false, data.reason or "Key ไม่ถูกต้อง"
+        return false, data.reason or "Key ไม่ถูกต้องหรือหมดอายุ"
     end
 end
 
@@ -54,7 +54,7 @@ local function loadScriptForMap()
     end
 end
 
---// UI สำหรับใส่ Key
+--// UI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -148,12 +148,11 @@ VerifyBtn.MouseButton1Click:Connect(function()
     Status.Text = "⏳ กำลังตรวจสอบ..."
     local ok, result = checkKey(key)
     if not ok then
-        Status.Text = "❌ " .. tostring(result)
+        Status.Text = "❌ "..tostring(result)
         wait(2)
         LocalPlayer:Kick("Key Invalid / Expired ❌")
     else
         Status.Text = "✅ Key ถูกต้อง! กำลังโหลดสคริปต์..."
-        print("✅ Key ใช้งานได้! หมดอายุ:", os.date("%c", result.expire/1000))
         wait(1)
         ScreenGui:Destroy()
         loadScriptForMap()
@@ -162,11 +161,12 @@ end)
 
 -- Event: Get Key
 GetKeyBtn.MouseButton1Click:Connect(function()
-    local url = "https://gat-keys.netlify.app" 
-    if syn then
-        syn.request({Url = url, Method = "GET"})
+    local url = "https://gat-keys.netlify.app"
+    if setclipboard then
+        setclipboard(url)
+        Status.Text = "✅ ลิงค์ Get Key ถูกคัดลอกแล้ว!"
     else
-        Status.Text = "🔗 โปรดเปิดเว็บนี้เพื่อสร้าง Key: "..url
-        print("เปิดเว็บนี้เพื่อสร้าง Key:", url)
+        Status.Text = "🔗 โปรดคัดลอกลิงค์นี้: "..url
+        print("คัดลอกลิงค์ Get Key:", url)
     end
 end)
