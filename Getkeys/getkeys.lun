@@ -1,0 +1,60 @@
+--// Loader Script
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+
+-- KEY ที่ผู้ใช้กรอก
+local KEY = "ใส่-Key-ที่ผู้ใช้กรอก"
+
+-- API URL (Netlify)
+local API_URL = "https://get-keys.netlify.app/.netlify/functions/verifykey"
+
+-- ฟังก์ชันตรวจสอบ Key
+local function checkKey(key)
+    local response
+    pcall(function()
+        response = game:HttpGet(API_URL .. "?key=" .. key)
+    end)
+    if not response then
+        return false, "ไม่สามารถเชื่อมต่อ API ได้"
+    end
+
+    local success, data = pcall(function()
+        return HttpService:JSONDecode(response)
+    end)
+    if not success then
+        return false, "API ตอบกลับไม่ถูกต้อง"
+    end
+
+    if data.valid then
+        return true, data
+    else
+        return false, data.reason or "Key ไม่ถูกต้อง"
+    end
+end
+
+-- ตรวจสอบ Key
+local ok, result = checkKey(KEY)
+if not ok then
+    warn("❌ Key ไม่ถูกต้อง: " .. tostring(result))
+    Players.LocalPlayer:Kick("Key Invalid / Expired ❌")
+    return
+end
+
+print("✅ Key ใช้งานได้! ประเภท:", result.type, "หมดอายุ:", os.date("%c", result.expire/1000))
+
+-- ตรวจจับแมพ
+local placeId = game.PlaceId
+print("🌐 PlaceId:", placeId)
+
+local scripts = {
+    [1234567890] = "Games/GrowGarden.lua", -- Grow a Garden
+    [2233445566] = "Games/GardenTow.lua",  -- Garden Tow
+    [3344556677] = "Games/HuntZombie.lua", -- Hunt Zombie
+}
+
+local targetScript = scripts[placeId]
+if targetScript then
+    loadfile(targetScript)()
+else
+    warn("⚠️ ไม่พบสคริปต์สำหรับเกมนี้")
+end
