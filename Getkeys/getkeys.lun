@@ -1,27 +1,28 @@
---// Loader Script
+-- Loader.lua
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
--- KEY ที่ผู้ใช้กรอก
+-- กำหนด Key ที่ผู้เล่นกรอก
 local KEY = "ใส่-Key-ที่ผู้ใช้กรอก"
 
--- API URL (Netlify)
-local API_URL = "https://get-keys.netlify.app/.netlify/functions/verifykey"
+-- URL API ของ Netlify (เปลี่ยนเป็น URL ของคุณหลัง Deploy)
+local API_URL = "https://yourproject.netlify.app/.netlify/functions/verifykey"
 
--- ฟังก์ชันตรวจสอบ Key
+-- ฟังก์ชันตรวจสอบ Key กับ API
 local function checkKey(key)
-    local response
-    pcall(function()
-        response = game:HttpGet(API_URL .. "?key=" .. key)
+    local success, response = pcall(function()
+        return HttpService:GetAsync(API_URL .. "?key=" .. key)
     end)
-    if not response then
+
+    if not success then
         return false, "ไม่สามารถเชื่อมต่อ API ได้"
     end
 
-    local success, data = pcall(function()
+    local ok, data = pcall(function()
         return HttpService:JSONDecode(response)
     end)
-    if not success then
+
+    if not ok then
         return false, "API ตอบกลับไม่ถูกต้อง"
     end
 
@@ -35,14 +36,14 @@ end
 -- ตรวจสอบ Key
 local ok, result = checkKey(KEY)
 if not ok then
-    warn("❌ Key ไม่ถูกต้อง: " .. tostring(result))
+    warn("❌ Key Invalid: " .. tostring(result))
     Players.LocalPlayer:Kick("Key Invalid / Expired ❌")
     return
 end
 
 print("✅ Key ใช้งานได้! ประเภท:", result.type, "หมดอายุ:", os.date("%c", result.expire/1000))
 
--- ตรวจจับแมพ
+-- ตรวจจับ PlaceId (แมพ) เพื่อโหลดสคริปต์เฉพาะเกม
 local placeId = game.PlaceId
 print("🌐 PlaceId:", placeId)
 
@@ -54,7 +55,13 @@ local scripts = {
 
 local targetScript = scripts[placeId]
 if targetScript then
-    loadfile(targetScript)()
+    -- โหลดสคริปต์ของแมพ (ต้องมีไฟล์ .lua ใน Roblox Studio หรือผ่าน ModuleScript)
+    local func, err = loadfile(targetScript)
+    if func then
+        func()
+    else
+        warn("⚠️ โหลดสคริปต์ไม่สำเร็จ: " .. tostring(err))
+    end
 else
     warn("⚠️ ไม่พบสคริปต์สำหรับเกมนี้")
 end
