@@ -4,14 +4,15 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
 
--- URL เว็บ HTML ที่สร้าง Key
-local KEY_PAGE_URL = "https://gat-keys.netlify.app"
+-- URLs
+local MAIN_PAGE_URL   = "https://gat-keys.netlify.app"
+local REDEEM_PAGE_URL = "https://gat-keys.netlify.app/redeem.html"
 
 -- UI
 local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 300, 0, 180)
-Frame.Position = UDim2.new(0.5, -150, 0.5, -90)
+Frame.Size = UDim2.new(0, 320, 0, 200)
+Frame.Position = UDim2.new(0.5, -160, 0.5, -100)
 Frame.BackgroundColor3 = Color3.fromRGB(40,40,40)
 Frame.BorderSizePixel = 0
 
@@ -39,39 +40,46 @@ Status.Font = Enum.Font.Gotham
 Status.TextSize = 12
 Status.TextColor3 = Color3.fromRGB(255,255,0)
 
+-- ปุ่ม Verify
 local VerifyBtn = Instance.new("TextButton", Frame)
-VerifyBtn.Size = UDim2.new(0.5,-15,0,35)
-VerifyBtn.Position = UDim2.new(0,10,0,95)
+VerifyBtn.Size = UDim2.new(1,-20,0,35)
+VerifyBtn.Position = UDim2.new(0,10,0,90)
 VerifyBtn.Text = "✅ Verify Key"
 VerifyBtn.Font = Enum.Font.GothamBold
 VerifyBtn.TextSize = 14
 VerifyBtn.TextColor3 = Color3.fromRGB(255,255,255)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
 
+-- ปุ่ม Get Key (เว็บหลัก)
 local GetKeyBtn = Instance.new("TextButton", Frame)
 GetKeyBtn.Size = UDim2.new(0.5,-15,0,35)
-GetKeyBtn.Position = UDim2.new(0.5,5,0,95)
+GetKeyBtn.Position = UDim2.new(0,10,0,135)
 GetKeyBtn.Text = "🌐 Get Key"
 GetKeyBtn.Font = Enum.Font.GothamBold
 GetKeyBtn.TextSize = 14
 GetKeyBtn.TextColor3 = Color3.fromRGB(255,255,255)
 GetKeyBtn.BackgroundColor3 = Color3.fromRGB(0,85,170)
 
--- ฟังก์ชันตรวจสอบ Key จากเว็บ
+-- ปุ่ม Redeem Key (หน้า Redeem)
+local RedeemBtn = Instance.new("TextButton", Frame)
+RedeemBtn.Size = UDim2.new(0.5,-15,0,35)
+RedeemBtn.Position = UDim2.new(0.5,5,0,135)
+RedeemBtn.Text = "🎟️ Redeem Key"
+RedeemBtn.Font = Enum.Font.GothamBold
+RedeemBtn.TextSize = 14
+RedeemBtn.TextColor3 = Color3.fromRGB(255,255,255)
+RedeemBtn.BackgroundColor3 = Color3.fromRGB(170,85,0)
+
+-- ฟังก์ชันตรวจสอบ Key
 local function checkKey(key)
     local ok, response = pcall(function()
-        return game:HttpGet(KEY_PAGE_URL, true)
+        return game:HttpGet(REDEEM_PAGE_URL, true)
     end)
     if not ok then
         return false, "ไม่สามารถเชื่อมต่อเว็บได้"
     end
-
     local found = string.match(response, key)
-    if found then
-        return true
-    else
-        return false, "Key ไม่ถูกต้องหรือหมดอายุ"
-    end
+    return found and true or false, found and nil or "Key ไม่ถูกต้องหรือหมดอายุ"
 end
 
 -- โหลดสคริปต์ตามแมพ
@@ -81,13 +89,11 @@ local function loadScriptForMap()
         [2345678901] = "https://gat-keys.netlify.app/scripts/gardentow.lua",
         [3456789012] = "https://gat-keys.netlify.app/scripts/huntzombie.lua"
     }
-
     local url = scriptMap[PlaceId]
     if not url then
         LocalPlayer:Kick("❌ ไม่มีสคริปต์สำหรับแมพนี้")
         return
     end
-
     local success, err = pcall(function()
         loadstring(game:HttpGet(url))()
     end)
@@ -104,7 +110,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
         Status.Text = "⚠️ กรุณาใส่ Key"
         return
     end
-
     Status.Text = "⏳ กำลังตรวจสอบ..."
     local ok, result = checkKey(key)
     if not ok then
@@ -119,14 +124,26 @@ VerifyBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ปุ่ม Get Key (เปิดเว็บหลัก)
+-- ปุ่ม Get Key
 GetKeyBtn.MouseButton1Click:Connect(function()
     if syn and syn.request then
-        syn.request({ Url = KEY_PAGE_URL, Method = "GET" })
-    elseif (typeof(request) == "function") then
-        request({ Url = KEY_PAGE_URL, Method = "GET" })
-    elseif (typeof(httprequest) == "function") then
-        httprequest({ Url = KEY_PAGE_URL, Method = "GET" })
+        syn.request({ Url = MAIN_PAGE_URL, Method = "GET" })
+    elseif request then
+        request({ Url = MAIN_PAGE_URL, Method = "GET" })
+    elseif httprequest then
+        httprequest({ Url = MAIN_PAGE_URL, Method = "GET" })
     end
     Status.Text = "🌐 กำลังเปิดเว็บ GetKey..."
+end)
+
+-- ปุ่ม Redeem Key
+RedeemBtn.MouseButton1Click:Connect(function()
+    if syn and syn.request then
+        syn.request({ Url = REDEEM_PAGE_URL, Method = "GET" })
+    elseif request then
+        request({ Url = REDEEM_PAGE_URL, Method = "GET" })
+    elseif httprequest then
+        httprequest({ Url = REDEEM_PAGE_URL, Method = "GET" })
+    end
+    Status.Text = "🎟️ กำลังเปิดเว็บ Redeem..."
 end)
