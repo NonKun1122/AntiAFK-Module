@@ -1,59 +1,89 @@
-local HttpService = game:GetService("HttpService")
+-- Loader Roblox: Key System + Run Script ตามแมพ
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
 
--- เว็บ HTML แจก Key
-local KEY_PAGE_URL = "https://gat-keys.netlify.app"
+-- =======================
+-- ระบบ Key Mock (วันละ 1 Key)
+-- =======================
+local dailyKeyData = {
+    key = nil,
+    expire = 0,
+    lastGenerate = 0
+}
 
--- API ตรวจสอบ Key
-local API_URL = "https://gat-keys.netlify.app/verifyKey"
-
-local function checkKey(key)
-    local ok, response = pcall(function()
-        return game:HttpGet(API_URL.."?key="..key)
-    end)
-    if not ok then return false, "ไม่สามารถเชื่อมต่อ API" end
-
-    local success, data = pcall(function()
-        return HttpService:JSONDecode(response)
-    end)
-    if not success then return false, "API ตอบกลับไม่ถูกต้อง" end
-
-    return data.valid, data.reason
+local function generateKey(length)
+    length = length or 24
+    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    local key = ""
+    for i = 1, length do
+        key = key .. chars:sub(math.random(1,#chars), math.random(1,#chars))
+    end
+    return key:sub(1,4).."-"..key:sub(5,8).."-"..key:sub(9,12).."-"..key:sub(13,16).."-"..key:sub(17,20).."-"..key:sub(21,24)
 end
 
-local function loadScriptForMap()
-    local scriptMap = {
-        [1234567890] = "https://gat-keys.netlify.app/scripts/growagarden.lua",
-        [2345678901] = "https://gat-keys.netlify.app/scripts/gardentow.lua",
-        [3456789012] = "https://gat-keys.netlify.app/scripts/huntzombie.lua"
-    }
+local function createDailyKey()
+    local now = os.time()
+    local today = os.date("*t", now)
+    local last = os.date("*t", dailyKeyData.lastGenerate)
+    if dailyKeyData.key and today.day == last.day and today.month == last.month and today.year == last.year then
+        return dailyKeyData.key, dailyKeyData.expire
+    else
+        local key = generateKey()
+        local expire = now + 24*60*60
+        dailyKeyData.key = key
+        dailyKeyData.expire = expire
+        dailyKeyData.lastGenerate = now
+        return key, expire
+    end
+end
 
+local function verifyKey(key)
+    local now = os.time()
+    if dailyKeyData.key == key and dailyKeyData.expire > now then
+        return true, dailyKeyData.expire
+    else
+        return false, "Key ไม่ถูกต้องหรือหมดอายุ"
+    end
+end
+
+-- =======================
+-- Script Map ตาม PlaceId
+-- =======================
+local scriptMap = {
+    [1234567890] = "loadstring(game:HttpGet("https://raw.githubusercontent.com/NonKun1122/AntiAFK-Module/refs/heads/main/ChulexX.lua"))()", -- Grow a Garden
+    [2345678901] = "https://gat-keys.netlify.app/scripts/gardentow.lua",   -- Garden Tow
+    [3456789012] = "https://gat-keys.netlify.app/scripts/huntzombie.lua"    -- Hunt Zombie
+}
+
+local function loadScriptForMap()
     local url = scriptMap[PlaceId]
     if not url then
-        LocalPlayer:Kick("❌ ไม่มีสคริปต์สำหรับแมพนี้")
+        warn("❌ ไม่มีสคริปต์สำหรับแมพนี้")
         return
     end
-
     local success, err = pcall(function()
         loadstring(game:HttpGet(url))()
     end)
     if not success then
-        warn("โหลดสคริปต์ไม่สำเร็จ:", err)
-        LocalPlayer:Kick("❌ Error โหลดสคริปต์")
+        warn("❌ โหลดสคริปต์ไม่สำเร็จ:", err)
     end
 end
 
--- UI
+-- =======================
+-- สร้าง UI
+-- =======================
 local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = UDim2.new(0,320,0,180)
 Frame.Position = UDim2.new(0.5,-160,0.5,-90)
 Frame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Frame.BorderSizePixel = 0
 
 local Title = Instance.new("TextLabel", Frame)
 Title.Size = UDim2.new(1,0,0,30)
+Title.Position = UDim2.new(0,0,0,0)
 Title.BackgroundTransparency = 1
 Title.Text = "🔑 Key Verification"
 Title.Font = Enum.Font.GothamBold
@@ -63,26 +93,22 @@ Title.TextColor3 = Color3.fromRGB(255,255,255)
 local KeyBox = Instance.new("TextBox", Frame)
 KeyBox.Size = UDim2.new(1,-20,0,35)
 KeyBox.Position = UDim2.new(0,10,0,45)
-KeyBox.PlaceholderText = "กรอก Key ที่ได้จากเว็บ..."
+KeyBox.PlaceholderText = "กรอก Key ที่ได้จากระบบ"
 KeyBox.ClearTextOnFocus = false
 
 local VerifyBtn = Instance.new("TextButton", Frame)
 VerifyBtn.Size = UDim2.new(0.48,-15,0,35)
 VerifyBtn.Position = UDim2.new(0,10,0,90)
 VerifyBtn.Text = "✅ Verify Key"
-VerifyBtn.Font = Enum.Font.GothamBold
-VerifyBtn.TextSize = 14
-VerifyBtn.TextColor3 = Color3.fromRGB(255,255,255)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
+VerifyBtn.TextColor3 = Color3.fromRGB(255,255,255)
 
 local GetKeyBtn = Instance.new("TextButton", Frame)
 GetKeyBtn.Size = UDim2.new(0.48,-15,0,35)
 GetKeyBtn.Position = UDim2.new(0.52,5,0,90)
 GetKeyBtn.Text = "🌐 Get Key"
-GetKeyBtn.Font = Enum.Font.GothamBold
-GetKeyBtn.TextSize = 14
-GetKeyBtn.TextColor3 = Color3.fromRGB(255,255,255)
 GetKeyBtn.BackgroundColor3 = Color3.fromRGB(50,50,200)
+GetKeyBtn.TextColor3 = Color3.fromRGB(255,255,255)
 
 local Status = Instance.new("TextLabel", Frame)
 Status.Size = UDim2.new(1,0,0,20)
@@ -91,33 +117,39 @@ Status.BackgroundTransparency = 1
 Status.Font = Enum.Font.Gotham
 Status.TextSize = 12
 Status.TextColor3 = Color3.fromRGB(255,255,0)
-Status.Text = ""
 
--- กด Verify
+local function updateStatus(msg)
+    Status.Text = msg
+end
+
+-- =======================
+-- Event: Get Key
+-- =======================
+GetKeyBtn.MouseButton1Click:Connect(function()
+    local key, expire = createDailyKey()
+    KeyBox.Text = key
+    updateStatus("✅ ได้ Key แล้ว หมดอายุ: "..os.date("%c",expire))
+end)
+
+-- =======================
+-- Event: Verify Key
+-- =======================
 VerifyBtn.MouseButton1Click:Connect(function()
     local key = KeyBox.Text
     if key == "" then
-        Status.Text = "⚠️ กรุณาใส่ Key"
+        updateStatus("⚠️ กรุณาใส่ Key")
         return
     end
-    Status.Text = "⏳ กำลังตรวจสอบ..."
-    local ok, reason = checkKey(key)
+
+    updateStatus("⏳ กำลังตรวจสอบ...")
+    local ok, result = verifyKey(key)
     if ok then
-        Status.Text = "✅ Key ถูกต้อง โหลด Script..."
+        updateStatus("✅ Key ถูกต้อง! โหลด Script ตามแมพ...")
         wait(1)
         ScreenGui:Destroy()
         loadScriptForMap()
     else
-        Status.Text = "❌ "..tostring(reason)
-        wait(2)
-        LocalPlayer:Kick("Key Invalid / Expired ❌")
+        updateStatus("❌ "..tostring(result))
+        -- ไม่ Kick
     end
-end)
-
--- กด Get Key
-GetKeyBtn.MouseButton1Click:Connect(function()
-    -- เปิดเว็บแจก Key
-    local success, err = pcall(function()
-        game:GetService("Players").LocalPlayer:Kick("เปิดเว็บเพื่อรับ Key: "..KEY_PAGE_URL)
-    end)
 end)
