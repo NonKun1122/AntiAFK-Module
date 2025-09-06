@@ -51,7 +51,7 @@ end
 -- Script Map ตาม PlaceId
 -- =======================
 local scriptMap = {
-    [1234567890] = "loadstring(game:HttpGet("https://raw.githubusercontent.com/NonKun1122/AntiAFK-Module/refs/heads/main/ChulexX.lua"))()", -- Grow a Garden
+    [126884695634066] = "loadstring(game:HttpGet("https://raw.githubusercontent.com/NonKun1122/AntiAFK-Module/refs/heads/main/ChulexX.lua"))()", -- Grow a Garden
     [2345678901] = "https://gat-keys.netlify.app/scripts/gardentow.lua",   -- Garden Tow
     [3456789012] = "https://gat-keys.netlify.app/scripts/huntzombie.lua"    -- Hunt Zombie
 }
