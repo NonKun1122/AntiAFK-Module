@@ -4,10 +4,10 @@ local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
 
 -- เว็บ HTML แจก Key
-local KEY_PAGE_URL = "https://gat-keys.netlify.app/redeem.html"
+local KEY_PAGE_URL = "https://gat-keys.netlify.app"
 
 -- API ตรวจสอบ Key
-local API_URL = "https://gat-keys.netlify.app/.netlify/functions/verifyKey"
+local API_URL = "https://gat-keys.netlify.app/verifyKey"
 
 local function checkKey(key)
     local ok, response = pcall(function()
