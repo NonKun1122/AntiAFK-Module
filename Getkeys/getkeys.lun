@@ -1,4 +1,6 @@
--- Loader Roblox: Key System + Run Script ตามแมพ
+-- =======================
+-- Loader Key + Run Script ตามแมพ
+-- =======================
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
@@ -51,9 +53,9 @@ end
 -- Script Map ตาม PlaceId
 -- =======================
 local scriptMap = {
-    [126884695634066] = "loadstring(game:HttpGet("https://raw.githubusercontent.com/NonKun1122/AntiAFK-Module/refs/heads/main/ChulexX.lua"))()", -- Grow a Garden
-    [2345678901] = "https://gat-keys.netlify.app/scripts/gardentow.lua",   -- Garden Tow
-    [3456789012] = "https://gat-keys.netlify.app/scripts/huntzombie.lua"    -- Hunt Zombie
+    [126884695634066] = "https://raw.githubusercontent.com/NonKun1122/AntiAFK-Module/refs/heads/main/ChulexX.lua", -- แมพจริงของคุณ
+    [2345678901] = "https://gat-keys.netlify.app/scripts/gardentow.lua",
+    [3456789012] = "https://gat-keys.netlify.app/scripts/huntzombie.lua"
 }
 
 local function loadScriptForMap()
@@ -73,13 +75,17 @@ end
 -- =======================
 -- สร้าง UI
 -- =======================
-local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
 
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0,320,0,180)
-Frame.Position = UDim2.new(0.5,-160,0.5,-90)
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 320, 0, 180)
+Frame.AnchorPoint = Vector2.new(0.5,0.5)
+Frame.Position = UDim2.new(0.5,0,0.5,0)
 Frame.BackgroundColor3 = Color3.fromRGB(40,40,40)
-Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
 
 local Title = Instance.new("TextLabel", Frame)
 Title.Size = UDim2.new(1,0,0,30)
