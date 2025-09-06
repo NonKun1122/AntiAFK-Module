@@ -1,97 +1,38 @@
--- =======================
--- Loader Key + Run Script ตามแมพ
--- =======================
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
 
--- =======================
--- ระบบ Key Mock (วันละ 1 Key)
--- =======================
-local dailyKeyData = {
-    key = nil,
-    expire = 0,
-    lastGenerate = 0
-}
+local API_URL = "https://gat-keys.netlify.app/api"
 
-local function generateKey(length)
-    length = length or 24
-    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    local key = ""
-    for i = 1, length do
-        key = key .. chars:sub(math.random(1,#chars), math.random(1,#chars))
-    end
-    return key:sub(1,4).."-"..key:sub(5,8).."-"..key:sub(9,12).."-"..key:sub(13,16).."-"..key:sub(17,20).."-"..key:sub(21,24)
-end
-
-local function createDailyKey()
-    local now = os.time()
-    local today = os.date("*t", now)
-    local last = os.date("*t", dailyKeyData.lastGenerate)
-    if dailyKeyData.key and today.day == last.day and today.month == last.month and today.year == last.year then
-        return dailyKeyData.key, dailyKeyData.expire
-    else
-        local key = generateKey()
-        local expire = now + 24*60*60
-        dailyKeyData.key = key
-        dailyKeyData.expire = expire
-        dailyKeyData.lastGenerate = now
-        return key, expire
-    end
-end
-
-local function verifyKey(key)
-    local now = os.time()
-    if dailyKeyData.key == key and dailyKeyData.expire > now then
-        return true, dailyKeyData.expire
-    else
-        return false, "Key ไม่ถูกต้องหรือหมดอายุ"
-    end
-end
-
--- =======================
--- Script Map ตาม PlaceId
--- =======================
+-- Script map ตาม PlaceId
 local scriptMap = {
-    [126884695634066] = "https://raw.githubusercontent.com/NonKun1122/AntiAFK-Module/refs/heads/main/ChulexX.lua", -- แมพจริงของคุณ
+    [126884695634066] = "https://raw.githubusercontent.com/NonKun1122/AntiAFK-Module/refs/heads/main/ChulexX.lua",
     [2345678901] = "https://gat-keys.netlify.app/scripts/gardentow.lua",
     [3456789012] = "https://gat-keys.netlify.app/scripts/huntzombie.lua"
 }
 
-local function loadScriptForMap()
+local function loadScript()
     local url = scriptMap[PlaceId]
-    if not url then
-        warn("❌ ไม่มีสคริปต์สำหรับแมพนี้")
-        return
-    end
-    local success, err = pcall(function()
+    if url then
         loadstring(game:HttpGet(url))()
-    end)
-    if not success then
-        warn("❌ โหลดสคริปต์ไม่สำเร็จ:", err)
+    else
+        warn("❌ ไม่มีสคริปต์สำหรับแมพนี้")
     end
 end
 
--- =======================
--- สร้าง UI
--- =======================
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
-
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 320, 0, 180)
+-- UI
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 340, 0, 180)
 Frame.AnchorPoint = Vector2.new(0.5,0.5)
 Frame.Position = UDim2.new(0.5,0,0.5,0)
 Frame.BackgroundColor3 = Color3.fromRGB(40,40,40)
-Frame.Parent = ScreenGui
 
 local Title = Instance.new("TextLabel", Frame)
 Title.Size = UDim2.new(1,0,0,30)
-Title.Position = UDim2.new(0,0,0,0)
 Title.BackgroundTransparency = 1
-Title.Text = "🔑 Key Verification"
+Title.Text = "🔑 Key System"
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 16
 Title.TextColor3 = Color3.fromRGB(255,255,255)
@@ -99,8 +40,16 @@ Title.TextColor3 = Color3.fromRGB(255,255,255)
 local KeyBox = Instance.new("TextBox", Frame)
 KeyBox.Size = UDim2.new(1,-20,0,35)
 KeyBox.Position = UDim2.new(0,10,0,45)
-KeyBox.PlaceholderText = "กรอก Key ที่ได้จากระบบ"
+KeyBox.PlaceholderText = "กรอก Key ที่นี่..."
 KeyBox.ClearTextOnFocus = false
+
+local Status = Instance.new("TextLabel", Frame)
+Status.Size = UDim2.new(1,0,0,20)
+Status.Position = UDim2.new(0,0,1,-25)
+Status.BackgroundTransparency = 1
+Status.Font = Enum.Font.Gotham
+Status.TextSize = 12
+Status.TextColor3 = Color3.fromRGB(255,255,0)
 
 local VerifyBtn = Instance.new("TextButton", Frame)
 VerifyBtn.Size = UDim2.new(0.48,-15,0,35)
@@ -116,46 +65,47 @@ GetKeyBtn.Text = "🌐 Get Key"
 GetKeyBtn.BackgroundColor3 = Color3.fromRGB(50,50,200)
 GetKeyBtn.TextColor3 = Color3.fromRGB(255,255,255)
 
-local Status = Instance.new("TextLabel", Frame)
-Status.Size = UDim2.new(1,0,0,20)
-Status.Position = UDim2.new(0,0,1,-25)
-Status.BackgroundTransparency = 1
-Status.Font = Enum.Font.Gotham
-Status.TextSize = 12
-Status.TextColor3 = Color3.fromRGB(255,255,0)
-
 local function updateStatus(msg)
     Status.Text = msg
 end
 
--- =======================
--- Event: Get Key
--- =======================
+-- Event: Get Key ฟรี
 GetKeyBtn.MouseButton1Click:Connect(function()
-    local key, expire = createDailyKey()
-    KeyBox.Text = key
-    updateStatus("✅ ได้ Key แล้ว หมดอายุ: "..os.date("%c",expire))
+    local url = API_URL.."/getKey?userId="..LocalPlayer.UserId
+    local ok, res = pcall(function()
+        return HttpService:GetAsync(url)
+    end)
+    if ok then
+        local data = HttpService:JSONDecode(res)
+        KeyBox.Text = data.key
+        updateStatus("✅ ได้ Key! หมดอายุ: "..os.date("%c",data.expire/1000))
+    else
+        updateStatus("❌ ไม่สามารถเชื่อมต่อ API ได้")
+    end
 end)
 
--- =======================
 -- Event: Verify Key
--- =======================
 VerifyBtn.MouseButton1Click:Connect(function()
     local key = KeyBox.Text
     if key == "" then
         updateStatus("⚠️ กรุณาใส่ Key")
         return
     end
-
-    updateStatus("⏳ กำลังตรวจสอบ...")
-    local ok, result = verifyKey(key)
+    updateStatus("⏳ กำลังตรวจสอบ Key...")
+    local ok,res = pcall(function()
+        return HttpService:GetAsync(API_URL.."/verifyKey?key="..key)
+    end)
     if ok then
-        updateStatus("✅ Key ถูกต้อง! โหลด Script ตามแมพ...")
-        wait(1)
-        ScreenGui:Destroy()
-        loadScriptForMap()
+        local data = HttpService:JSONDecode(res)
+        if data.valid then
+            updateStatus("✅ Key ถูกต้อง! โหลด Script...")
+            wait(1)
+            ScreenGui:Destroy()
+            loadScript()
+        else
+            updateStatus("❌ "..tostring(data.reason))
+        end
     else
-        updateStatus("❌ "..tostring(result))
-        -- ไม่ Kick
+        updateStatus("❌ ไม่สามารถเชื่อมต่อ API ได้")
     end
 end)
