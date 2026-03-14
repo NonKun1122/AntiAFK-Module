@@ -1,6 +1,6 @@
--- Brainrot Hub V3.3 (God of Tsunami) for Escape Tsunami For Brainrots
+-- Brainrot Hub V3.4 (Ghost Mode Edition) for Escape Tsunami For Brainrots
 -- Created by Manus AI
--- Features: Absolute Immortality (All Waves), Space Teleport, Speed, Jump, Anti-Ban, Movable UI
+-- Features: Ghost Mode (TouchInterest Remover), Absolute Immortality, Space Teleport, Speed, Jump, Anti-Ban, Movable UI
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -14,6 +14,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local Config = {
     AntiAFK = false,
     GodMode = false,
+    GhostMode = false,
     WalkSpeed = 16,
     JumpPower = 50,
     InfiniteJump = false,
@@ -39,7 +40,7 @@ end
 
 -- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BrainrotHub_V3_3"
+ScreenGui.Name = "BrainrotHub_V3_4"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = playerGui
 
@@ -73,9 +74,9 @@ end
 
 -- Main Frame
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 350, 0, 420)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -210)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Size = UDim2.new(0, 350, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = Config.UIVisible
 MainFrame.Parent = ScreenGui
@@ -84,7 +85,7 @@ Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 -- Header
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 45)
-Header.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Header.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 12)
@@ -94,10 +95,10 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -20, 1, 0)
 Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "🧠 BRAINROT HUB V3.3"
+Title.Text = "🧠 BRAINROT HUB V3.4 - GHOST"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
+Title.TextSize = 15
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
@@ -106,7 +107,7 @@ local Content = Instance.new("ScrollingFrame")
 Content.Size = UDim2.new(1, -20, 1, -65)
 Content.Position = UDim2.new(0, 10, 0, 55)
 Content.BackgroundTransparency = 1
-Content.CanvasSize = UDim2.new(0, 0, 0, 600)
+Content.CanvasSize = UDim2.new(0, 0, 0, 650)
 Content.ScrollBarThickness = 2
 Content.Parent = MainFrame
 
@@ -118,18 +119,18 @@ UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 local function createToggle(name, default, callback)
     local button = Instance.new("TextButton")
     button.Size = UDim2.new(1, 0, 0, 40)
-    button.BackgroundColor3 = default and Color3.fromRGB(0, 160, 90) or Color3.fromRGB(160, 50, 50)
+    button.BackgroundColor3 = default and Color3.fromRGB(0, 140, 80) or Color3.fromRGB(140, 40, 40)
     button.Text = name .. ": " .. (default and "ON" or "OFF")
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
     button.Font = Enum.Font.GothamSemibold
-    button.TextSize = 14
+    button.TextSize = 13
     button.Parent = Content
     Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
     
     local enabled = default
     button.MouseButton1Click:Connect(function()
         enabled = not enabled
-        button.BackgroundColor3 = enabled and Color3.fromRGB(0, 160, 90) or Color3.fromRGB(160, 50, 50)
+        button.BackgroundColor3 = enabled and Color3.fromRGB(0, 140, 80) or Color3.fromRGB(140, 40, 40)
         button.Text = name .. ": " .. (enabled and "ON" or "OFF")
         callback(enabled)
     end)
@@ -138,7 +139,7 @@ end
 local function createSlider(name, min, max, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 65)
-    frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     frame.Parent = Content
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
     
@@ -149,13 +150,13 @@ local function createSlider(name, min, max, default, callback)
     label.Text = name .. ": " .. default
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.Gotham
-    label.TextSize = 13
+    label.TextSize = 12
     label.Parent = frame
     
     local btnMinus = Instance.new("TextButton")
     btnMinus.Size = UDim2.new(0, 45, 0, 25)
     btnMinus.Position = UDim2.new(0, 10, 0, 32)
-    btnMinus.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+    btnMinus.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     btnMinus.Text = "-"
     btnMinus.TextColor3 = Color3.fromRGB(255, 255, 255)
     btnMinus.Parent = frame
@@ -164,7 +165,7 @@ local function createSlider(name, min, max, default, callback)
     local btnPlus = Instance.new("TextButton")
     btnPlus.Size = UDim2.new(0, 45, 0, 25)
     btnPlus.Position = UDim2.new(1, -55, 0, 32)
-    btnPlus.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+    btnPlus.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     btnPlus.Text = "+"
     btnPlus.TextColor3 = Color3.fromRGB(255, 255, 255)
     btnPlus.Parent = frame
@@ -182,18 +183,19 @@ end
 local function createButton(name, callback)
     local button = Instance.new("TextButton")
     button.Size = UDim2.new(1, 0, 0, 35)
-    button.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
+    button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     button.Text = name
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
     button.Font = Enum.Font.GothamBold
-    button.TextSize = 13
+    button.TextSize = 12
     button.Parent = Content
     Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
     button.MouseButton1Click:Connect(callback)
 end
 
 -- Features
-createToggle("Absolute Immortality (อมตะทุกคลื่น)", Config.GodMode, function(v) Config.GodMode = v end)
+createToggle("Ghost Mode (ร่างวิญญาณ - กันตาย 100%)", Config.GhostMode, function(v) Config.GhostMode = v end)
+createToggle("Absolute Immortality (ล็อคเลือด)", Config.GodMode, function(v) Config.GodMode = v end)
 createSlider("WalkSpeed (วิ่งเร็ว)", 16, 300, Config.WalkSpeed, function(v) Config.WalkSpeed = v end)
 createSlider("JumpPower (กระโดดสูง)", 50, 500, Config.JumpPower, function(v) Config.JumpPower = v end)
 createToggle("Infinite Jump (โดดไม่จำกัด)", Config.InfiniteJump, function(v) Config.InfiniteJump = v end)
@@ -222,53 +224,48 @@ createButton("Teleport to End (จุดจบ)", function()
     if finish then teleportTo(finish.CFrame + Vector3.new(0, 5, 0)) else print("Finish not found") end
 end)
 
--- Space Teleport (Find Space Area)
 createButton("Teleport to Space (พื้นที่จักรวาล)", function()
     local space = workspace:FindFirstChild("Space") or workspace:FindFirstChild("Galaxy") or workspace:FindFirstChild("Universe")
     if space then
         teleportTo(space.CFrame + Vector3.new(0, 10, 0))
     else
-        -- Fallback: Try to find by name or specific coordinate if known
-        teleportTo(CFrame.new(0, 5000, 0)) -- Common space height
-        print("Space area not found by name, teleporting to height 5000")
+        teleportTo(CFrame.new(0, 5000, 0))
+        print("Space area not found, teleporting to height 5000")
     end
 end)
 
--- Optimized Heartbeat Loop (Runs at 30 FPS to save resources)
+-- Optimized Heartbeat Loop (Runs at 30 FPS)
 local lastUpdate = 0
 RunService.Heartbeat:Connect(function()
     local now = tick()
-    if now - lastUpdate < 0.033 then return end -- Limit to ~30 FPS
+    if now - lastUpdate < 0.033 then return end
     lastUpdate = now
     
     pcall(function()
         if player.Character and player.Character:FindFirstChild("Humanoid") then
             local hum = player.Character.Humanoid
             
-            -- Absolute Immortality (Wave Proof)
+            -- Ghost Mode (TouchInterest Remover)
+            if Config.GhostMode then
+                for _, v in pairs(player.Character:GetDescendants()) do
+                    if v:IsA("TouchTransmitter") then
+                        v:Destroy() -- Remove touch detection from character
+                    end
+                end
+            end
+            
+            -- Absolute Immortality
             if Config.GodMode then
                 hum.MaxHealth = 999999
                 hum.Health = 999999
-                
-                -- Lock State to prevent dying or falling
                 if hum:GetState() == Enum.HumanoidStateType.Dead then
                     hum:ChangeState(Enum.HumanoidStateType.GettingUp)
                 end
                 
-                -- Remove Kill Parts / Scripts dynamically
+                -- Remove Kill Scripts
                 for _, v in pairs(player.Character:GetChildren()) do
                     if v:IsA("Script") and (v.Name:lower():find("kill") or v.Name:lower():find("death") or v.Name:lower():find("damage")) then
                         v.Disabled = true
-                    end
-                end
-                
-                -- No-Touch Waves & Lightning Bypass
-                for _, v in pairs(workspace:GetDescendants()) do
-                    if v:IsA("BasePart") then
-                        local name = v.Name:lower()
-                        if name:find("wave") or name:find("tsunami") or name:find("lightning") or name:find("wonky") or name:find("kill") then
-                            v.CanTouch = false
-                        end
                     end
                 end
             end
@@ -313,7 +310,7 @@ end)
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 55, 0, 55)
 ToggleBtn.Position = UDim2.new(0, 20, 0.5, -27)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ToggleBtn.Text = "🧠"
 ToggleBtn.TextSize = 28
 ToggleBtn.Parent = ScreenGui
@@ -323,4 +320,4 @@ makeDraggable(ToggleBtn, ToggleBtn)
 
 ToggleBtn.MouseButton1Click:Connect(toggleUI)
 
-print("Brainrot Hub V3.3 God of Tsunami Loaded! UI & Button are movable.")
+print("Brainrot Hub V3.4 Ghost Mode Loaded! UI & Button are movable.")
